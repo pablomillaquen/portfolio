@@ -63,4 +63,4 @@ Acceder a `/admin/login` e iniciar sesión con un usuario que tenga `is_admin = 
 
 ## Licencia
 
-MIT
+GNU v.3
