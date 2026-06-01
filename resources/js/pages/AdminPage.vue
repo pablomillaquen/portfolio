@@ -426,6 +426,11 @@ onMounted(async () => {
                     <input v-model="settings.contact.email" placeholder="Contact email">
                     <input v-model="settings.footer.copyright.es" placeholder="Footer ES">
                     <input v-model="settings.footer.copyright.en" placeholder="Footer EN">
+                    <label class="checkbox-row">
+                        <input v-model="settings.welcome_modal_enabled" type="checkbox">
+                        Welcome modal enabled
+                    </label>
+                    <input v-model="settings.welcome_modal_video_url" placeholder="Welcome video URL (YouTube embed)">
                 </div>
                 <label>Stack JSON</label>
                 <textarea v-model="stackJson" rows="12" />

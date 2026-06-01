@@ -5,13 +5,32 @@ import { RouterLink } from 'vue-router';
 const site = inject('site');
 const loading = ref(true);
 const payload = ref(null);
+const showModal = ref(false);
 
 const locale = computed(() => site.locale.value);
+
+const defaultVideoUrl = 'https://www.youtube.com/embed/cs6xpqg1aUg';
+
+const videoUrl = computed(() => {
+    if (!payload.value) return defaultVideoUrl;
+    return payload.value.settings.welcome_modal_video_url || defaultVideoUrl;
+});
+
+const modalEnabled = computed(() => {
+    if (!payload.value) return false;
+    return payload.value.settings.welcome_modal_enabled !== false;
+});
+
+const openModal = () => { showModal.value = true; };
+const closeModal = () => { showModal.value = false; };
 
 const loadData = async () => {
     loading.value = true;
     payload.value = await site.loadHome();
     loading.value = false;
+    if (modalEnabled.value) {
+        showModal.value = true;
+    }
 };
 
 watch(() => site.locale.value, loadData);
@@ -30,6 +49,9 @@ onMounted(loadData);
                     <RouterLink class="primary-button" to="/projects">
                         {{ locale === 'es' ? 'Ver proyectos' : 'View projects' }}
                     </RouterLink>
+                    <button class="secondary-button" @click="openModal">
+                        {{ locale === 'es' ? 'Ver video' : 'Watch video' }}
+                    </button>
                     <RouterLink class="secondary-button" to="/contact">
                         {{ locale === 'es' ? 'Contactar' : 'Contact me' }}
                     </RouterLink>
@@ -112,4 +134,19 @@ onMounted(loadData);
             </div>
         </section>
     </div>
+
+    <Teleport to="body">
+        <div v-if="showModal" class="modal-overlay" @click.self="closeModal">
+            <div class="modal-content">
+                <button class="modal-close" @click="closeModal">&times;</button>
+                <iframe
+                    :src="videoUrl"
+                    title="Welcome video"
+                    frameborder="0"
+                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                    allowfullscreen
+                />
+            </div>
+        </div>
+    </Teleport>
 </template>
