@@ -78,6 +78,9 @@ const resetCourseForm = () => Object.assign(courseForm, blankCourse());
 const fillProject = (project) => {
     Object.assign(projectForm, JSON.parse(JSON.stringify(project)));
     projectForm.stackInput = (project.stack || []).join(', ');
+    if (projectForm.published_at) {
+        projectForm.published_at = projectForm.published_at.substring(0, 10);
+    }
 };
 
 const fillPost = (post) => {
@@ -89,6 +92,9 @@ const fillPost = (post) => {
 
 const fillCourse = (course) => {
     Object.assign(courseForm, JSON.parse(JSON.stringify(course)));
+    if (courseForm.issued_at) {
+        courseForm.issued_at = courseForm.issued_at.substring(0, 10);
+    }
 };
 
 const loadAdminData = async () => {

@@ -36,10 +36,10 @@ onMounted(load);
 
         <section class="panel article-card">
             <img v-if="post.coverImageUrl" class="article-cover" :src="post.coverImageUrl" :alt="post.title">
-            <p class="eyebrow">{{ post.publishes_at }}</p>
+            <p class="eyebrow">{{ post.publishedAt }}</p>
             <h1>{{ post.title }}</h1>
             <p class="lead">{{ post.excerpt }}</p>
-            <div class="article-body">{{ post.content }}</div>
+            <div class="article-body" v-html="post.content"></div>
             <div class="cta-row">
                 <a v-if="shareUrl" class="secondary-button" :href="shareUrl" target="_blank" rel="noreferrer">
                     LinkedIn

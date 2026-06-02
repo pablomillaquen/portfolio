@@ -11,6 +11,7 @@ use App\Models\SocialLink;
 use App\Support\TranslatableContent;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Str;
 
 class PublicContentController extends Controller
 {
@@ -178,7 +179,7 @@ class PublicContentController extends Controller
             'shareEnabled' => $post->share_enabled,
             'title' => TranslatableContent::text($post->title, $locale),
             'excerpt' => TranslatableContent::text($post->excerpt, $locale),
-            'content' => $full ? TranslatableContent::text($post->content, $locale) : null,
+            'content' => $full ? Str::markdown(TranslatableContent::text($post->content, $locale) ?? '') : null,
             'publishedAt' => optional($post->published_at)->toDateString(),
         ];
     }
