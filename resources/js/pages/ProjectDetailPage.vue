@@ -28,7 +28,7 @@ onMounted(load);
             <img :src="project.coverImageUrl" :alt="project.title">
             <div>
                 <h1>{{ project.title }}</h1>
-                <p class="lead">{{ project.description }}</p>
+                <p class="lead">{{ project.summary }}</p>
                 <div class="meta-tags">
                     <span v-for="item in project.stack" :key="item">{{ item }}</span>
                 </div>
@@ -47,6 +47,11 @@ onMounted(load);
                     <h3>{{ item.value }}</h3>
                 </article>
             </div>
+        </section>
+
+        <section class="panel" v-if="project.description">
+            <h2>{{ site.locale.value === 'es' ? 'Descripción' : 'Description' }}</h2>
+            <div class="article-body" v-html="project.description"></div>
         </section>
 
         <section class="panel">

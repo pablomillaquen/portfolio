@@ -146,7 +146,7 @@ class PublicContentController extends Controller
             'repositoryUrl' => $project->repository_url,
             'title' => TranslatableContent::text($project->title, $locale),
             'summary' => TranslatableContent::text($project->summary, $locale),
-            'description' => TranslatableContent::text($project->description, $locale),
+            'description' => $full ? Str::markdown(TranslatableContent::text($project->description, $locale) ?? '') : TranslatableContent::text($project->description, $locale),
             'details' => TranslatableContent::deep($project->details ?? [], $locale),
             'stack' => $project->stack ?? [],
             'publishedAt' => optional($project->published_at)->toDateString(),
