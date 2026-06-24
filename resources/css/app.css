@@ -259,10 +259,13 @@ h2 {
     gap: 2rem;
 }
 
-.hero-card,
-.detail-hero {
+.hero-card {
     grid-template-columns: 1.4fr 0.8fr;
     align-items: center;
+}
+
+.detail-hero {
+    grid-template-columns: 1fr;
 }
 
 /* ─────────────────────────────────────────────────
