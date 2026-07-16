@@ -291,9 +291,9 @@ h2 {
 .project-card img,
 .hero-banner img,
 .article-cover {
+    width: 100%;
     border-radius: 4px;
     object-fit: cover;
-    aspect-ratio: 4 / 3;
 }
 
 /* ─────────────────────────────────────────────────
