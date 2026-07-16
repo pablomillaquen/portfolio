@@ -42,7 +42,7 @@ onMounted(load);
             <div class="article-body" v-html="post.content"></div>
             <div class="cta-row">
                 <a v-if="shareUrl" class="secondary-button" :href="shareUrl" target="_blank" rel="noreferrer">
-                    LinkedIn
+                    Compartir en LinkedIn
                 </a>
             </div>
         </section>

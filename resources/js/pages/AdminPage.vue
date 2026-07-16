@@ -1,9 +1,12 @@
 <script setup>
 import { computed, inject, onMounted, reactive, ref } from 'vue';
 import { api } from '../services/api';
+import ContentPreviewModal from '../components/ContentPreviewModal.vue';
 
 const site = inject('site');
 const tab = ref('projects');
+const projectSectionTab = ref('list');
+const postSectionTab = ref('list');
 const message = ref('');
 const error = ref('');
 const projects = ref([]);
@@ -15,6 +18,12 @@ const credentials = reactive({
     email: '',
     password: '',
 });
+
+const showPreviewModal = ref(false);
+const previewType = ref('project');
+const previewLocale = ref('en');
+const previewHtml = ref('');
+const previewTitle = ref('');
 
 const blankProject = () => ({
     id: null,
@@ -71,23 +80,25 @@ const experienceJson = ref('[]');
 
 const isAdmin = computed(() => Boolean(site.authUser.value?.is_admin));
 
-const resetProjectForm = () => Object.assign(projectForm, blankProject());
-const resetPostForm = () => Object.assign(postForm, blankPost());
+const resetProjectForm = () => {
+    Object.assign(projectForm, blankProject());
+    projectSectionTab.value = 'form';
+};
+const resetPostForm = () => {
+    Object.assign(postForm, blankPost());
+    postSectionTab.value = 'form';
+};
 const resetCourseForm = () => Object.assign(courseForm, blankCourse());
 
 const fillProject = (project) => {
     Object.assign(projectForm, JSON.parse(JSON.stringify(project)));
     projectForm.stackInput = (project.stack || []).join(', ');
-    if (projectForm.published_at) {
-        projectForm.published_at = projectForm.published_at.substring(0, 10);
-    }
+    projectSectionTab.value = 'form';
 };
 
 const fillPost = (post) => {
     Object.assign(postForm, JSON.parse(JSON.stringify(post)));
-    if (postForm.published_at) {
-        postForm.published_at = postForm.published_at.substring(0, 10);
-    }
+    postSectionTab.value = 'form';
 };
 
 const fillCourse = (course) => {
@@ -144,9 +155,9 @@ const saveProject = async () => {
         await api.post('/api/admin/projects', payload);
     }
 
-    resetProjectForm();
     await loadAdminData();
     message.value = 'Project saved.';
+    projectSectionTab.value = 'form';
 };
 
 const deleteProject = async (id) => {
@@ -161,9 +172,9 @@ const savePost = async () => {
         await api.post('/api/admin/posts', postForm);
     }
 
-    resetPostForm();
     await loadAdminData();
     message.value = 'Post saved.';
+    postSectionTab.value = 'form';
 };
 
 const deletePost = async (id) => {
@@ -215,6 +226,50 @@ const addDetail = () => projectForm.details.push({ label: { es: '', en: '' }, va
 const addMedia = () => projectForm.media.push({ kind: 'image', url: '', caption: { es: '', en: '' }, sort_order: projectForm.media.length });
 const addSocial = () => socialLinks.value.push({ platform: '', label: { es: '', en: '' }, url: '', icon: '', sort_order: socialLinks.value.length, active: true });
 
+const openPreview = async (type) => {
+    const formData = type === 'project' ? projectForm : postForm;
+    previewType.value = type;
+    previewLocale.value = 'en';
+    previewTitle.value = formData.title?.en || formData.title?.es || '';
+
+    try {
+        const { data } = await api.post('/api/admin/preview', {
+            type,
+            locale: 'en',
+            data: JSON.parse(JSON.stringify(formData)),
+        });
+        previewHtml.value = data.html;
+        previewTitle.value = data.title;
+        showPreviewModal.value = true;
+    } catch {
+        error.value = 'Failed to load preview.';
+    }
+};
+
+const togglePreviewLocale = async () => {
+    const newLocale = previewLocale.value === 'en' ? 'es' : 'en';
+    const formData = previewType.value === 'project' ? projectForm : postForm;
+    previewLocale.value = newLocale;
+
+    try {
+        const { data } = await api.post('/api/admin/preview', {
+            type: previewType.value,
+            locale: newLocale,
+            data: JSON.parse(JSON.stringify(formData)),
+        });
+        previewHtml.value = data.html;
+        previewTitle.value = data.title;
+    } catch (e) {
+        console.error('[Preview] Failed to toggle locale:', e?.response?.data ?? e);
+        error.value = 'Failed to load preview.';
+    }
+};
+
+const closePreview = () => {
+    showPreviewModal.value = false;
+    previewHtml.value = '';
+};
+
 onMounted(async () => {
     await site.refreshAuth();
     if (isAdmin.value) {
@@ -258,21 +313,25 @@ onMounted(async () => {
             <p v-if="message" class="success-text">{{ message }}</p>
             <p v-if="error" class="error-text">{{ error }}</p>
 
-            <section v-if="tab === 'projects'" class="admin-grid">
-                <div class="panel">
+            <section v-if="tab === 'projects'">
+                <div v-if="projectSectionTab === 'list'" class="panel">
                     <div class="section-heading">
                         <h2>Projects</h2>
                         <button class="ghost-button" @click="resetProjectForm">New</button>
                     </div>
                     <div class="admin-list">
                         <button v-for="project in projects" :key="project.id" class="admin-list-item" @click="fillProject(project)">
+                            <span class="star-indicator" :class="{ 'is-featured': project.featured }">★</span>
                             <strong>{{ project.title.en }}</strong>
                             <span>{{ project.status }}</span>
                         </button>
                     </div>
                 </div>
-                <form class="panel editor-form" @submit.prevent="saveProject">
-                    <h2>{{ projectForm.id ? 'Edit project' : 'New project' }}</h2>
+                <form v-if="projectSectionTab === 'form'" class="panel editor-form" @submit.prevent="saveProject">
+                    <div class="section-heading">
+                        <button class="ghost-button" type="button" @click="projectSectionTab = 'list'">← Back</button>
+                        <h2>{{ projectForm.id ? 'Edit project' : 'New project' }}</h2>
+                    </div>
                     <div class="two-column">
                         <input v-model="projectForm.title.es" placeholder="Titulo ES">
                         <input v-model="projectForm.title.en" placeholder="Title EN">
@@ -280,7 +339,7 @@ onMounted(async () => {
                         <input v-model="projectForm.cover_image_url" placeholder="Cover image URL">
                         <input v-model="projectForm.demo_url" placeholder="Demo URL">
                         <input v-model="projectForm.repository_url" placeholder="Repository URL">
-                        <input v-model="projectForm.published_at" type="date">
+                        <input v-model="projectForm.published_at" type="datetime-local">
                         <input v-model="projectForm.stackInput" placeholder="Stack separated by commas">
                     </div>
                     <div class="two-column">
@@ -325,33 +384,38 @@ onMounted(async () => {
                     </div>
                     <div class="cta-row">
                         <button class="primary-button" type="submit">Save project</button>
+                        <button class="secondary-button" type="button" @click="openPreview('project')">Preview</button>
                         <button v-if="projectForm.id" class="danger-button" type="button" @click="deleteProject(projectForm.id)">Delete</button>
                     </div>
                 </form>
             </section>
 
-            <section v-if="tab === 'posts'" class="admin-grid">
-                <div class="panel">
+            <section v-if="tab === 'posts'">
+                <div v-if="postSectionTab === 'list'" class="panel">
                     <div class="section-heading">
                         <h2>Posts</h2>
                         <button class="ghost-button" @click="resetPostForm">New</button>
                     </div>
                     <div class="admin-list">
                         <button v-for="post in posts" :key="post.id" class="admin-list-item" @click="fillPost(post)">
+                            <span class="star-indicator" :class="{ 'is-featured': post.featured }">★</span>
                             <strong>{{ post.title.en }}</strong>
                             <span>{{ post.type }}</span>
                         </button>
                     </div>
                 </div>
-                <form class="panel editor-form" @submit.prevent="savePost">
-                    <h2>{{ postForm.id ? 'Edit post' : 'New post' }}</h2>
+                <form v-if="postSectionTab === 'form'" class="panel editor-form" @submit.prevent="savePost">
+                    <div class="section-heading">
+                        <button class="ghost-button" type="button" @click="postSectionTab = 'list'">← Back</button>
+                        <h2>{{ postForm.id ? 'Edit post' : 'New post' }}</h2>
+                    </div>
                     <div class="two-column">
                         <input v-model="postForm.title.es" placeholder="Titulo ES">
                         <input v-model="postForm.title.en" placeholder="Title EN">
                         <input v-model="postForm.slug" placeholder="Slug">
                         <input v-model="postForm.cover_image_url" placeholder="Cover image URL">
                         <input v-model="postForm.external_url" placeholder="External URL">
-                        <input v-model="postForm.published_at" type="date">
+                        <input v-model="postForm.published_at" type="datetime-local">
                     </div>
                     <div class="editor-toggles">
                         <select v-model="postForm.type">
@@ -373,6 +437,7 @@ onMounted(async () => {
                     </div>
                     <div class="cta-row">
                         <button class="primary-button" type="submit">Save post</button>
+                        <button class="secondary-button" type="button" @click="openPreview('post')">Preview</button>
                         <button v-if="postForm.id" class="danger-button" type="button" @click="deletePost(postForm.id)">Delete</button>
                     </div>
                 </form>
@@ -461,5 +526,14 @@ onMounted(async () => {
                 <button class="primary-button" type="button" @click="saveSocialLinks">Save social links</button>
             </section>
         </template>
+
+        <ContentPreviewModal
+            :show="showPreviewModal"
+            :html="previewHtml"
+            :title="previewTitle"
+            :locale="previewLocale"
+            @close="closePreview"
+            @toggle-locale="togglePreviewLocale"
+        />
     </div>
 </template>

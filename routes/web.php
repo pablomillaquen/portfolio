@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\Api\AdminPreviewController;
 use App\Http\Controllers\Api\AdminCourseController;
 use App\Http\Controllers\Api\AdminPostController;
 use App\Http\Controllers\Api\AdminProjectController;
@@ -27,6 +28,8 @@ Route::prefix('api')->group(function (): void {
     Route::get('/auth/me', [AuthController::class, 'me']);
 
     Route::middleware('admin.session')->prefix('admin')->group(function (): void {
+        Route::post('/preview', [AdminPreviewController::class, 'preview']);
+
         Route::get('/projects', [AdminProjectController::class, 'index']);
         Route::post('/projects', [AdminProjectController::class, 'store']);
         Route::put('/projects/{project}', [AdminProjectController::class, 'update']);

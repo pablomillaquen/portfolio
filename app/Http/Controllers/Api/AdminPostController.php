@@ -18,14 +18,18 @@ class AdminPostController extends Controller
 
     public function store(Request $request)
     {
-        $post = Post::query()->create($this->validated($request));
+        $payload = $this->validated($request);
+        $payload['status'] = $this->resolveStatus($payload);
+        $post = Post::query()->create($payload);
 
         return response()->json($post, 201);
     }
 
     public function update(Request $request, Post $post)
     {
-        $post->update($this->validated($request, $post->id));
+        $payload = $this->validated($request, $post->id);
+        $payload['status'] = $this->resolveStatus($payload, $post);
+        $post->update($payload);
 
         return response()->json($post);
     }
@@ -64,5 +68,28 @@ class AdminPostController extends Controller
         $data['share_enabled'] = $data['share_enabled'] ?? true;
 
         return $data;
+    }
+
+    private function resolveStatus(array $data, ?Post $existing = null): string
+    {
+        $publishedAt = $data['published_at'] ?? null;
+
+        if ($publishedAt === null) {
+            return $existing?->status ?? ($data['status'] ?? 'draft');
+        }
+
+        if (is_string($publishedAt) && $publishedAt !== '') {
+            $date = \Carbon\Carbon::parse($publishedAt);
+
+            if ($date->isPast()) {
+                return 'published';
+            }
+
+            if ($date->isFuture() && $existing && $existing->status === 'published') {
+                return 'draft';
+            }
+        }
+
+        return $data['status'] ?? 'draft';
     }
 }

@@ -19,6 +19,7 @@ class AdminProjectController extends Controller
     public function store(Request $request)
     {
         $payload = $this->validated($request);
+        $payload['status'] = $this->resolveStatus($payload);
         $project = Project::query()->create($payload);
         $this->syncMedia($project, $request->input('media', []));
 
@@ -28,6 +29,7 @@ class AdminProjectController extends Controller
     public function update(Request $request, Project $project)
     {
         $payload = $this->validated($request, $project->id);
+        $payload['status'] = $this->resolveStatus($payload, $project);
         $project->update($payload);
         $this->syncMedia($project, $request->input('media', []));
 
@@ -89,5 +91,28 @@ class AdminProjectController extends Controller
                 'sort_order' => $item['sort_order'] ?? $index,
             ]);
         }
+    }
+
+    private function resolveStatus(array $data, ?Project $existing = null): string
+    {
+        $publishedAt = $data['published_at'] ?? null;
+
+        if ($publishedAt === null) {
+            return $existing?->status ?? ($data['status'] ?? 'draft');
+        }
+
+        if (is_string($publishedAt) && $publishedAt !== '') {
+            $date = \Carbon\Carbon::parse($publishedAt);
+
+            if ($date->isPast()) {
+                return 'published';
+            }
+
+            if ($date->isFuture() && $existing && $existing->status === 'published') {
+                return 'draft';
+            }
+        }
+
+        return $data['status'] ?? 'draft';
     }
 }

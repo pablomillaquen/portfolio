@@ -32,6 +32,7 @@ onMounted(load);
                 <div class="meta-tags">
                     <span v-for="item in project.stack" :key="item">{{ item }}</span>
                 </div>
+                <hr>
                 <div class="cta-row">
                     <a v-if="project.demoUrl" class="primary-button" :href="project.demoUrl" target="_blank" rel="noreferrer">Demo</a>
                     <a v-if="project.repositoryUrl" class="secondary-button" :href="project.repositoryUrl" target="_blank" rel="noreferrer">Repo</a>
