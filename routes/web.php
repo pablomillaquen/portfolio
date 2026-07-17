@@ -6,6 +6,9 @@ use App\Http\Controllers\Api\AdminPostController;
 use App\Http\Controllers\Api\AdminProjectController;
 use App\Http\Controllers\Api\AdminSiteSettingController;
 use App\Http\Controllers\Api\AdminSocialLinkController;
+use App\Http\Controllers\Api\AdminSeasonController;
+use App\Http\Controllers\Api\AdminCategoryController;
+use App\Http\Controllers\Api\AdminCapabilityController;
 use App\Http\Controllers\Api\AuthController;
 use App\Http\Controllers\Api\ContactController;
 use App\Http\Controllers\Api\PublicContentController;
@@ -22,6 +25,10 @@ Route::prefix('api')->group(function (): void {
     Route::get('/courses', [PublicContentController::class, 'courses']);
     Route::get('/courses/{slug}', [PublicContentController::class, 'course']);
     Route::post('/contact', [ContactController::class, 'store']);
+
+    Route::get('/capabilities', [PublicContentController::class, 'capabilities']);
+    Route::get('/categories', [PublicContentController::class, 'categories']);
+    Route::get('/seasons', [PublicContentController::class, 'seasons']);
 
     Route::post('/auth/login', [AuthController::class, 'login']);
     Route::post('/auth/logout', [AuthController::class, 'logout']);
@@ -50,6 +57,21 @@ Route::prefix('api')->group(function (): void {
 
         Route::get('/settings', [AdminSiteSettingController::class, 'index']);
         Route::put('/settings', [AdminSiteSettingController::class, 'save']);
+
+        Route::get('/seasons', [AdminSeasonController::class, 'index']);
+        Route::post('/seasons', [AdminSeasonController::class, 'store']);
+        Route::put('/seasons/{season}', [AdminSeasonController::class, 'update']);
+        Route::delete('/seasons/{season}', [AdminSeasonController::class, 'destroy']);
+
+        Route::get('/categories', [AdminCategoryController::class, 'index']);
+        Route::post('/categories', [AdminCategoryController::class, 'store']);
+        Route::put('/categories/{category}', [AdminCategoryController::class, 'update']);
+        Route::delete('/categories/{category}', [AdminCategoryController::class, 'destroy']);
+
+        Route::get('/capabilities', [AdminCapabilityController::class, 'index']);
+        Route::post('/capabilities', [AdminCapabilityController::class, 'store']);
+        Route::put('/capabilities/{capability}', [AdminCapabilityController::class, 'update']);
+        Route::delete('/capabilities/{capability}', [AdminCapabilityController::class, 'destroy']);
     });
 });
 

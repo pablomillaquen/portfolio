@@ -3,6 +3,8 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 
 class Post extends Model
 {
@@ -17,6 +19,9 @@ class Post extends Model
         'title',
         'excerpt',
         'content',
+        'season_id',
+        'episode_number',
+        'related_project_id',
         'published_at',
     ];
 
@@ -30,5 +35,20 @@ class Post extends Model
             'content' => 'array',
             'published_at' => 'datetime',
         ];
+    }
+
+    public function season(): BelongsTo
+    {
+        return $this->belongsTo(Season::class);
+    }
+
+    public function relatedProject(): BelongsTo
+    {
+        return $this->belongsTo(Project::class, 'related_project_id');
+    }
+
+    public function projects(): BelongsToMany
+    {
+        return $this->belongsToMany(Project::class, 'project_post');
     }
 }

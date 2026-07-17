@@ -40,6 +40,26 @@ onMounted(load);
             </div>
         </section>
 
+        <section class="panel" v-if="project.problem">
+            <h2>{{ site.locale.value === 'es' ? 'Problema' : 'Problem' }}</h2>
+            <div class="article-body" v-html="project.problem"></div>
+        </section>
+
+        <section class="panel" v-if="project.approach">
+            <h2>{{ site.locale.value === 'es' ? 'Enfoque' : 'Approach' }}</h2>
+            <div class="article-body" v-html="project.approach"></div>
+        </section>
+
+        <section class="panel" v-if="project.contribution">
+            <h2>{{ site.locale.value === 'es' ? 'Aporte' : 'Contribution' }}</h2>
+            <div class="article-body" v-html="project.contribution"></div>
+        </section>
+
+        <section class="panel" v-if="project.whatItDemonstrates">
+            <h2>{{ site.locale.value === 'es' ? 'Qué demuestra este trabajo' : 'What this work demonstrates' }}</h2>
+            <div class="article-body" v-html="project.whatItDemonstrates"></div>
+        </section>
+
         <section class="panel">
             <h2>{{ site.locale.value === 'es' ? 'Detalles' : 'Details' }}</h2>
             <div class="detail-grid">
@@ -68,6 +88,23 @@ onMounted(load);
                         allowfullscreen
                     />
                 </template>
+            </div>
+        </section>
+
+        <section class="panel" v-if="project.relatedPosts && project.relatedPosts.length > 0">
+            <h2>{{ site.locale.value === 'es' ? 'Publicaciones relacionadas' : 'Related posts' }}</h2>
+            <div class="list-grid">
+                <RouterLink
+                    v-for="post in project.relatedPosts"
+                    :key="post.id"
+                    :to="`/posts/${post.slug}`"
+                    class="list-card"
+                >
+                    <div>
+                        <h3>{{ post.title }}</h3>
+                        <p v-if="post.season">{{ post.season.name }} - {{ site.locale.value === 'es' ? 'Episodio' : 'Episode' }} {{ post.episodeNumber }}</p>
+                    </div>
+                </RouterLink>
             </div>
         </section>
     </div>

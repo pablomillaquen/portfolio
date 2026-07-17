@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class Project extends Model
@@ -20,6 +21,11 @@ class Project extends Model
         'description',
         'details',
         'stack',
+        'problem',
+        'approach',
+        'contribution',
+        'what_it_demonstrates',
+        'project_status',
         'published_at',
     ];
 
@@ -32,6 +38,10 @@ class Project extends Model
             'description' => 'array',
             'details' => 'array',
             'stack' => 'array',
+            'problem' => 'array',
+            'approach' => 'array',
+            'contribution' => 'array',
+            'what_it_demonstrates' => 'array',
             'published_at' => 'datetime',
         ];
     }
@@ -39,5 +49,20 @@ class Project extends Model
     public function media(): HasMany
     {
         return $this->hasMany(ProjectMedia::class)->orderBy('sort_order');
+    }
+
+    public function posts(): BelongsToMany
+    {
+        return $this->belongsToMany(Post::class, 'project_post');
+    }
+
+    public function categories(): BelongsToMany
+    {
+        return $this->belongsToMany(Category::class, 'category_project');
+    }
+
+    public function capabilities(): BelongsToMany
+    {
+        return $this->belongsToMany(Capability::class, 'capability_project');
     }
 }

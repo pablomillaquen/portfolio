@@ -1,25 +1,59 @@
 <script setup>
-import { inject, onMounted, ref, watch } from 'vue';
+import { inject, onMounted, ref, watch, computed } from 'vue';
 import { RouterLink } from 'vue-router';
 import { api } from '../services/api';
+import CategoryFilter from '../components/CategoryFilter.vue';
 
 const site = inject('site');
 const projects = ref([]);
+const categories = ref([]);
+const selectedCategories = ref([]);
 
-const load = async () => {
-    const { data } = await api.get('/api/projects', { params: { locale: site.locale.value } });
+const locale = computed(() => site.locale.value);
+
+const loadProjects = async () => {
+    const params = { locale: site.locale.value };
+    if (selectedCategories.value.length > 0) {
+        params.category = selectedCategories.value.join(',');
+    }
+    const { data } = await api.get('/api/projects', { params });
     projects.value = data;
 };
 
-watch(() => site.locale.value, load);
-onMounted(load);
+const loadCategories = async () => {
+    const { data } = await api.get('/api/categories', { params: { locale: site.locale.value } });
+    categories.value = data.data;
+};
+
+const toggleCategory = (slug) => {
+    const index = selectedCategories.value.indexOf(slug);
+    if (index === -1) {
+        selectedCategories.value.push(slug);
+    } else {
+        selectedCategories.value.splice(index, 1);
+    }
+    loadProjects();
+};
+
+const loadData = async () => {
+    await Promise.all([loadProjects(), loadCategories()]);
+};
+
+watch(() => site.locale.value, loadData);
+onMounted(loadData);
 </script>
 
 <template>
     <section class="panel">
         <div class="section-heading">
-            <h1>{{ site.locale.value === 'es' ? 'Proyectos' : 'Projects' }}</h1>
+            <h1>{{ locale === 'es' ? 'Proyectos' : 'Projects' }}</h1>
         </div>
+        <CategoryFilter
+            v-if="categories.length > 0"
+            :categories="categories"
+            :selected="selectedCategories"
+            @toggle="toggleCategory"
+        />
         <div class="project-grid">
             <RouterLink
                 v-for="project in projects"
@@ -34,5 +68,8 @@ onMounted(load);
                 </div>
             </RouterLink>
         </div>
+        <p v-if="projects.length === 0" class="empty-state">
+            {{ locale === 'es' ? 'No hay proyectos en esta categoría.' : 'No projects in this category.' }}
+        </p>
     </section>
 </template>

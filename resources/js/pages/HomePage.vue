@@ -1,11 +1,14 @@
 <script setup>
 import { computed, inject, onMounted, ref, watch } from 'vue';
 import { RouterLink } from 'vue-router';
+import { api } from '../services/api';
+import CapabilityCard from '../components/CapabilityCard.vue';
 
 const site = inject('site');
 const loading = ref(true);
 const payload = ref(null);
 const showModal = ref(false);
+const capabilities = ref([]);
 
 const locale = computed(() => site.locale.value);
 
@@ -26,7 +29,12 @@ const closeModal = () => { showModal.value = false; };
 
 const loadData = async () => {
     loading.value = true;
-    payload.value = await site.loadHome();
+    const [homeData, capabilitiesData] = await Promise.all([
+        site.loadHome(),
+        api.get('/api/capabilities', { params: { locale: site.locale.value } }),
+    ]);
+    payload.value = homeData;
+    capabilities.value = capabilitiesData.data.data;
     loading.value = false;
     if (modalEnabled.value) {
         showModal.value = true;
@@ -62,6 +70,17 @@ onMounted(loadData);
                 :src="payload.settings.home.profileImage"
                 alt="Profile"
             >
+        </section>
+
+        <section class="panel">
+            <h2>{{ locale === 'es' ? 'Capacidades profesionales' : 'Professional capabilities' }}</h2>
+            <div class="capability-grid">
+                <CapabilityCard
+                    v-for="capability in capabilities"
+                    :key="capability.id"
+                    :capability="capability"
+                />
+            </div>
         </section>
 
         <section class="panel">
