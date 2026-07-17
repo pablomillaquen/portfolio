@@ -12,7 +12,7 @@ class AdminProjectController extends Controller
     public function index()
     {
         return response()->json(
-            Project::query()->with('media')->orderByDesc('featured')->orderBy('sort_order')->get()
+            Project::query()->with(['media', 'categories', 'capabilities'])->orderByDesc('featured')->orderBy('sort_order')->get()
         );
     }
 

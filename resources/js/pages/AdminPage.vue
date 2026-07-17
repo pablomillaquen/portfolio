@@ -159,8 +159,8 @@ const fillProject = (project) => {
     data.details = data.details || [];
     data.stack = data.stack || [];
     data.media = data.media || [];
-    data.categories = data.categories || [];
-    data.capabilities = data.capabilities || [];
+    data.categories = (data.categories || []).map(c => typeof c === 'object' ? c.id : c);
+    data.capabilities = (data.capabilities || []).map(c => typeof c === 'object' ? c.id : c);
     Object.assign(projectForm, data);
     projectForm.stackInput = (project.stack || []).join(', ');
     projectSectionTab.value = 'form';
