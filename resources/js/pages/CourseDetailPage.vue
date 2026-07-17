@@ -20,26 +20,43 @@ const loadSeo = async () => {
     }
 };
 
-useHead(() => ({
-    title: seoData.value.title || 'Curso | Pablo Millaquen',
-    meta: [
-        { name: 'description', content: seoData.value.description || '' },
-        { property: 'og:title', content: seoData.value.title || '' },
-        { property: 'og:description', content: seoData.value.description || '' },
-        { property: 'og:image', content: seoData.value.image || '' },
-        { property: 'og:url', content: seoData.value.url || '' },
-        { property: 'og:type', content: 'article' },
-        { name: 'twitter:card', content: 'summary_large_image' },
-        { name: 'twitter:title', content: seoData.value.title || '' },
-        { name: 'twitter:description', content: seoData.value.description || '' },
-        { name: 'twitter:image', content: seoData.value.image || '' },
-    ],
-    link: [
-        { rel: 'canonical', href: seoData.value.url || '' },
-        { rel: 'alternate', hreflang: 'es', href: seoData.value.alternates?.es || '' },
-        { rel: 'alternate', hreflang: 'en', href: seoData.value.alternates?.en || '' },
-    ],
-}));
+useHead(() => {
+    const jsonLd = course.value ? {
+        '@context': 'https://schema.org',
+        '@type': 'EducationalOccupationalCredential',
+        'name': course.value.name,
+        'credentialCategory': 'certificate',
+        'issuer': {
+            '@type': 'Organization',
+            'name': course.value.issuer || '',
+        },
+        'dateIssued': course.value.issuedAt || '',
+        'url': course.value.url || '',
+        'identifier': course.value.credentialId || '',
+    } : null;
+
+    return {
+        title: seoData.value.title || 'Curso | Pablo Millaquen',
+        meta: [
+            { name: 'description', content: seoData.value.description || '' },
+            { property: 'og:title', content: seoData.value.title || '' },
+            { property: 'og:description', content: seoData.value.description || '' },
+            { property: 'og:image', content: seoData.value.image || '' },
+            { property: 'og:url', content: seoData.value.url || '' },
+            { property: 'og:type', content: 'article' },
+            { name: 'twitter:card', content: 'summary_large_image' },
+            { name: 'twitter:title', content: seoData.value.title || '' },
+            { name: 'twitter:description', content: seoData.value.description || '' },
+            { name: 'twitter:image', content: seoData.value.image || '' },
+        ],
+        link: [
+            { rel: 'canonical', href: seoData.value.url || '' },
+            { rel: 'alternate', hreflang: 'es', href: seoData.value.alternates?.es || '' },
+            { rel: 'alternate', hreflang: 'en', href: seoData.value.alternates?.en || '' },
+        ],
+        script: jsonLd ? [{ type: 'application/ld+json', innerHTML: JSON.stringify(jsonLd) }] : [],
+    };
+});
 
 const load = async () => {
     const { data } = await api.get(`/api/courses/${route.params.slug}`, {
@@ -60,9 +77,13 @@ onMounted(() => {
 
 <template>
     <div v-if="course" class="detail-layout">
-        <RouterLink class="back-link" to="/courses">
-            {{ site.locale.value === 'es' ? 'Volver a cursos' : 'Back to courses' }}
-        </RouterLink>
+        <nav class="breadcrumb" aria-label="Breadcrumb">
+            <RouterLink to="/">{{ site.locale.value === 'es' ? 'Inicio' : 'Home' }}</RouterLink>
+            <span aria-hidden="true">/</span>
+            <RouterLink to="/courses">{{ site.locale.value === 'es' ? 'Cursos' : 'Courses' }}</RouterLink>
+            <span aria-hidden="true">/</span>
+            <span aria-current="page">{{ course.name }}</span>
+        </nav>
 
         <section class="panel">
             <p class="eyebrow">{{ course.issuedAt }}</p>

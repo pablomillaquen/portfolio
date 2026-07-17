@@ -737,6 +737,30 @@ h2 {
     font-size: 0.875rem;
 }
 
+.breadcrumb {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-size: 0.875rem;
+    color: var(--muted);
+    margin-bottom: 1.5rem;
+}
+
+.breadcrumb a {
+    color: var(--muted);
+    text-decoration: none;
+    transition: color 0.2s;
+}
+
+.breadcrumb a:hover {
+    color: var(--text);
+}
+
+.breadcrumb span[aria-current="page"] {
+    color: var(--text);
+    font-weight: 500;
+}
+
 /* ─────────────────────────────────────────────────
    FORMS
 ───────────────────────────────────────────────── */

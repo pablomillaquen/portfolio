@@ -88,9 +88,13 @@ onMounted(() => {
 
 <template>
     <div v-if="post" class="detail-layout">
-        <RouterLink class="back-link" to="/posts">
-            {{ locale === 'es' ? 'Volver a posts' : 'Back to posts' }}
-        </RouterLink>
+        <nav class="breadcrumb" aria-label="Breadcrumb">
+            <RouterLink to="/">{{ locale === 'es' ? 'Inicio' : 'Home' }}</RouterLink>
+            <span aria-hidden="true">/</span>
+            <RouterLink to="/posts">{{ locale === 'es' ? 'Publicaciones' : 'Posts' }}</RouterLink>
+            <span aria-hidden="true">/</span>
+            <span aria-current="page">{{ post.title }}</span>
+        </nav>
 
         <section class="panel article-card">
             <img v-if="post.coverImageUrl" class="article-cover" :src="post.coverImageUrl" :alt="post.title">

@@ -100,9 +100,13 @@ onMounted(() => {
 
 <template>
     <div v-if="project" class="detail-layout">
-        <RouterLink class="back-link" to="/projects">
-            {{ site.locale.value === 'es' ? 'Volver a proyectos' : 'Back to projects' }}
-        </RouterLink>
+        <nav class="breadcrumb" aria-label="Breadcrumb">
+            <RouterLink to="/">{{ site.locale.value === 'es' ? 'Inicio' : 'Home' }}</RouterLink>
+            <span aria-hidden="true">/</span>
+            <RouterLink to="/projects">{{ site.locale.value === 'es' ? 'Proyectos' : 'Projects' }}</RouterLink>
+            <span aria-hidden="true">/</span>
+            <span aria-current="page">{{ project.title }}</span>
+        </nav>
 
         <section class="hero-banner panel detail-hero">
             <img :src="project.coverImageUrl" :alt="project.title">
