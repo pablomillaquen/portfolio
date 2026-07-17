@@ -58,7 +58,7 @@ class PublicContentController extends Controller
             ->orderBy('sort_order')
             ->with('media');
 
-        if ($category) {
+        if ($category->isNotEmpty()) {
             $categorySlugs = explode(',', $category);
             $query->whereHas('categories', function ($q) use ($categorySlugs) {
                 $q->whereIn('slug', $categorySlugs);
@@ -307,17 +307,22 @@ class PublicContentController extends Controller
                 ];
             }
 
-            $previousPost = Post::where('season_id', $post->season_id)
-                ->where('episode_number', '<', $post->episode_number)
-                ->where('status', 'published')
-                ->orderByDesc('episode_number')
-                ->first();
+            if ($post->season_id && $post->episode_number !== null) {
+                $previousPost = Post::where('season_id', $post->season_id)
+                    ->where('episode_number', '<', $post->episode_number)
+                    ->where('status', 'published')
+                    ->orderByDesc('episode_number')
+                    ->first();
 
-            $nextPost = Post::where('season_id', $post->season_id)
-                ->where('episode_number', '>', $post->episode_number)
-                ->where('status', 'published')
-                ->orderBy('episode_number')
-                ->first();
+                $nextPost = Post::where('season_id', $post->season_id)
+                    ->where('episode_number', '>', $post->episode_number)
+                    ->where('status', 'published')
+                    ->orderBy('episode_number')
+                    ->first();
+            } else {
+                $previousPost = null;
+                $nextPost = null;
+            }
 
             $payload['navigation'] = [
                 'previous' => $previousPost ? [
