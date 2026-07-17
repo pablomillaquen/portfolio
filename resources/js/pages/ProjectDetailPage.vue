@@ -32,6 +32,12 @@ onMounted(load);
                 <div class="meta-tags">
                     <span v-for="item in project.stack" :key="item">{{ item }}</span>
                 </div>
+                <div v-if="project.categories && project.categories.length > 0" class="meta-tags">
+                    <span v-for="cat in project.categories" :key="cat.slug" class="tag-category">{{ cat.name }}</span>
+                </div>
+                <div v-if="project.capabilities && project.capabilities.length > 0" class="meta-tags">
+                    <span v-for="cap in project.capabilities" :key="cap.slug" class="tag-capability">{{ cap.name }}</span>
+                </div>
                 <hr>
                 <div class="cta-row">
                     <a v-if="project.demoUrl" class="primary-button" :href="project.demoUrl" target="_blank" rel="noreferrer">Demo</a>
