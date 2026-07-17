@@ -82,11 +82,18 @@ class PublicContentController extends Controller
     public function posts(Request $request): JsonResponse
     {
         $locale = $request->string('locale', 'en')->toString();
+        $seasonSlug = $request->string('season')->toString();
+
+        $query = Post::query()
+            ->with('season')
+            ->where('status', 'published');
+
+        if ($seasonSlug !== '') {
+            $query->whereHas('season', fn ($q) => $q->where('slug', $seasonSlug));
+        }
 
         return response()->json(
-            Post::query()
-                ->where('status', 'published')
-                ->orderByDesc('featured')
+            $query->orderByDesc('featured')
                 ->orderByDesc('published_at')
                 ->get()
                 ->map(fn (Post $post) => $this->postPayload($post, $locale, false))
@@ -289,16 +296,16 @@ class PublicContentController extends Controller
             'publishedAt' => optional($post->published_at)->toDateString(),
         ];
 
-        if ($full) {
-            if ($post->season) {
-                $payload['season'] = [
-                    'id' => $post->season->id,
-                    'slug' => $post->season->slug,
-                    'name' => TranslatableContent::text($post->season->name, $locale),
-                ];
-                $payload['episodeNumber'] = $post->episode_number;
-            }
+        if ($post->season) {
+            $payload['season'] = [
+                'id' => $post->season->id,
+                'slug' => $post->season->slug,
+                'name' => TranslatableContent::text($post->season->name, $locale),
+            ];
+            $payload['episodeNumber'] = $post->episode_number;
+        }
 
+        if ($full) {
             if ($post->relatedProject) {
                 $payload['relatedProject'] = [
                     'id' => $post->relatedProject->id,

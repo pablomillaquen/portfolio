@@ -4,6 +4,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class Season extends Model
 {
@@ -23,7 +24,7 @@ class Season extends Model
         ];
     }
 
-    public function posts(): BelongsToMany
+    public function posts(): HasMany
     {
         return $this->hasMany(Post::class);
     }
