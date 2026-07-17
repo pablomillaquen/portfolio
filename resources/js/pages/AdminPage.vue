@@ -148,13 +148,30 @@ const resetCapabilityForm = () => {
 };
 
 const fillProject = (project) => {
-    Object.assign(projectForm, JSON.parse(JSON.stringify(project)));
+    const data = JSON.parse(JSON.stringify(project));
+    data.title = data.title || { es: '', en: '' };
+    data.summary = data.summary || { es: '', en: '' };
+    data.description = data.description || { es: '', en: '' };
+    data.problem = data.problem || { es: '', en: '' };
+    data.approach = data.approach || { es: '', en: '' };
+    data.contribution = data.contribution || { es: '', en: '' };
+    data.what_it_demonstrates = data.what_it_demonstrates || { es: '', en: '' };
+    data.details = data.details || [];
+    data.stack = data.stack || [];
+    data.media = data.media || [];
+    data.categories = data.categories || [];
+    data.capabilities = data.capabilities || [];
+    Object.assign(projectForm, data);
     projectForm.stackInput = (project.stack || []).join(', ');
     projectSectionTab.value = 'form';
 };
 
 const fillPost = (post) => {
-    Object.assign(postForm, JSON.parse(JSON.stringify(post)));
+    const data = JSON.parse(JSON.stringify(post));
+    data.title = data.title || { es: '', en: '' };
+    data.excerpt = data.excerpt || { es: '', en: '' };
+    data.content = data.content || { es: '', en: '' };
+    Object.assign(postForm, data);
     postSectionTab.value = 'form';
 };
 
