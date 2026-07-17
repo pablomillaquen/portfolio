@@ -521,8 +521,42 @@ h2 {
 .admin-list-item {
     display: flex;
     align-items: flex-start;
-    justify-content: space-between;
     gap: 1rem;
+}
+
+.list-card .post-cover {
+    width: 180px;
+    min-width: 180px;
+    height: 120px;
+    object-fit: cover;
+    border-radius: 4px;
+}
+
+.list-card > div {
+    flex: 1;
+    min-width: 0;
+}
+
+.list-card > div h3 {
+    font-size: 1rem;
+    margin-bottom: 0.25rem;
+}
+
+.list-card > div p {
+    font-size: 0.875rem;
+    color: var(--muted);
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+}
+
+.list-card > span {
+    font-size: 0.75rem;
+    color: var(--muted);
+    white-space: nowrap;
+    min-width: 80px;
+    text-align: right;
 }
 
 .project-card {
@@ -881,9 +915,10 @@ h2 {
 }
 
 /* ─────────────────────────────────────────────────
-   CATEGORY FILTER
+   CATEGORY FILTER / SEASON FILTER
 ───────────────────────────────────────────────── */
-.category-filter {
+.category-filter,
+.season-filter {
     display: flex;
     flex-wrap: wrap;
     gap: 0.5rem;

@@ -1,7 +1,6 @@
 <script setup>
 import { computed, inject, onMounted, ref, watch } from 'vue';
 import { api } from '../services/api';
-import SeasonList from '../components/SeasonList.vue';
 
 const site = inject('site');
 const posts = ref([]);
@@ -30,6 +29,11 @@ const selectSeason = (slug) => {
     loadPosts();
 };
 
+const clearSeason = () => {
+    selectedSeason.value = null;
+    loadPosts();
+};
+
 const filtered = computed(() =>
     posts.value.filter((post) =>
         `${post.title} ${post.excerpt}`.toLowerCase().includes(query.value.toLowerCase())
@@ -54,11 +58,22 @@ onMounted(loadData);
             class="search-input"
             :placeholder="locale === 'es' ? 'Buscar posts...' : 'Search posts...'"
         >
-        <SeasonList
-            v-if="seasons.length > 0"
-            :seasons="seasons"
-            @select="selectSeason"
-        />
+        <div v-if="seasons.length > 0" class="season-filter">
+            <button
+                :class="['filter-button', { active: !selectedSeason }]"
+                @click="clearSeason"
+            >
+                {{ locale === 'es' ? 'Todas' : 'All' }}
+            </button>
+            <button
+                v-for="season in seasons"
+                :key="season.id"
+                :class="['filter-button', { active: selectedSeason === season.slug }]"
+                @click="selectSeason(season.slug)"
+            >
+                {{ season.name }}
+            </button>
+        </div>
         <div class="list-grid posts-list">
             <component
                 :is="post.type === 'external' ? 'a' : 'router-link'"
