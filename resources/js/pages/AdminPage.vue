@@ -43,6 +43,10 @@ const blankProject = () => ({
     title: { es: '', en: '' },
     summary: { es: '', en: '' },
     description: { es: '', en: '' },
+    problem: { es: '', en: '' },
+    approach: { es: '', en: '' },
+    contribution: { es: '', en: '' },
+    what_it_demonstrates: { es: '', en: '' },
     details: [],
     stack: [],
     stackInput: '',
@@ -488,6 +492,25 @@ onMounted(async () => {
                             <option value="draft">Draft</option>
                             <option value="published">Published</option>
                         </select>
+                    </div>
+                    <div class="sub-editor">
+                        <h3>Case Study</h3>
+                        <div class="two-column">
+                            <textarea v-model="projectForm.problem.es" rows="3" placeholder="Problema ES" />
+                            <textarea v-model="projectForm.problem.en" rows="3" placeholder="Problem EN" />
+                        </div>
+                        <div class="two-column">
+                            <textarea v-model="projectForm.approach.es" rows="3" placeholder="Enfoque ES" />
+                            <textarea v-model="projectForm.approach.en" rows="3" placeholder="Approach EN" />
+                        </div>
+                        <div class="two-column">
+                            <textarea v-model="projectForm.contribution.es" rows="3" placeholder="Aporte ES" />
+                            <textarea v-model="projectForm.contribution.en" rows="3" placeholder="Contribution EN" />
+                        </div>
+                        <div class="two-column">
+                            <textarea v-model="projectForm.what_it_demonstrates.es" rows="3" placeholder="Qué demuestra ES" />
+                            <textarea v-model="projectForm.what_it_demonstrates.en" rows="3" placeholder="What it demonstrates EN" />
+                        </div>
                     </div>
                     <div class="sub-editor">
                         <div class="section-heading">

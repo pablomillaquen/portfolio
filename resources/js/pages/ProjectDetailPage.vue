@@ -6,12 +6,39 @@ import { api } from '../services/api';
 const site = inject('site');
 const route = useRoute();
 const project = ref(null);
+const showVideoModal = ref(false);
+const videoUrl = ref('');
 
 const load = async () => {
     const { data } = await api.get(`/api/projects/${route.params.slug}`, {
         params: { locale: site.locale.value },
     });
     project.value = data;
+};
+
+const openVideo = (url) => {
+    videoUrl.value = url;
+    showVideoModal.value = true;
+};
+
+const closeVideo = () => {
+    showVideoModal.value = false;
+    videoUrl.value = '';
+};
+
+const getYouTubeId = (url) => {
+    const match = url.match(/(?:youtu\.be\/|youtube\.com\/(?:embed\/|v\/|watch\?v=|watch\?.+&v=))([^&?#]+)/);
+    return match ? match[1] : null;
+};
+
+const getYouTubeThumbnail = (url) => {
+    const id = getYouTubeId(url);
+    return id ? `https://img.youtube.com/vi/${id}/hqdefault.jpg` : url;
+};
+
+const getYouTubeEmbed = (url) => {
+    const id = getYouTubeId(url);
+    return id ? `https://www.youtube.com/embed/${id}?autoplay=1` : url;
 };
 
 watch(() => [site.locale.value, route.params.slug], load);
@@ -85,17 +112,37 @@ onMounted(load);
             <h2>{{ site.locale.value === 'es' ? 'Galeria' : 'Gallery' }}</h2>
             <div class="media-grid">
                 <template v-for="item in project.media" :key="item.id">
-                    <img v-if="item.kind === 'image'" :src="item.url" :alt="item.caption || project.title">
-                    <iframe
-                        v-else
+                    <img
+                        v-if="item.kind === 'image'"
                         :src="item.url"
-                        :title="item.caption || project.title"
-                        frameborder="0"
-                        allowfullscreen
-                    />
+                        :alt="item.caption || project.title"
+                    >
+                    <button
+                        v-else
+                        class="video-thumbnail"
+                        @click="openVideo(item.url)"
+                    >
+                        <img :src="getYouTubeThumbnail(item.url)" :alt="item.caption || project.title">
+                        <span class="play-icon">▶</span>
+                    </button>
                 </template>
             </div>
         </section>
+
+        <!-- Video Modal -->
+        <Teleport to="body">
+            <div v-if="showVideoModal" class="modal-overlay" @click.self="closeVideo">
+                <div class="video-modal">
+                    <button class="modal-close" @click="closeVideo">×</button>
+                    <iframe
+                        :src="getYouTubeEmbed(videoUrl)"
+                        frameborder="0"
+                        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                        allowfullscreen
+                    ></iframe>
+                </div>
+            </div>
+        </Teleport>
 
         <section class="panel" v-if="project.relatedPosts && project.relatedPosts.length > 0">
             <h2>{{ site.locale.value === 'es' ? 'Publicaciones relacionadas' : 'Related posts' }}</h2>
