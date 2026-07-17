@@ -161,7 +161,7 @@ class PublicContentController extends Controller
 
         $query = Category::orderBy('dimension')->orderBy('slug');
 
-        if ($dimension) {
+        if ($dimension->isNotEmpty()) {
             $query->where('dimension', $dimension);
         }
 
@@ -183,7 +183,7 @@ class PublicContentController extends Controller
 
         $query = Season::orderBy('sort_order');
 
-        if ($status) {
+        if ($status->isNotEmpty()) {
             $query->where('status', $status);
         }
 
