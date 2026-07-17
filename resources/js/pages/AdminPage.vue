@@ -162,17 +162,26 @@ const fillCourse = (course) => {
 };
 
 const fillSeason = (season) => {
-    Object.assign(seasonForm, JSON.parse(JSON.stringify(season)));
+    const data = JSON.parse(JSON.stringify(season));
+    data.name = data.name || { es: '', en: '' };
+    data.description = data.description || { es: '', en: '' };
+    Object.assign(seasonForm, data);
     seasonSectionTab.value = 'form';
 };
 
 const fillCategory = (category) => {
-    Object.assign(categoryForm, JSON.parse(JSON.stringify(category)));
+    const data = JSON.parse(JSON.stringify(category));
+    data.name = data.name || { es: '', en: '' };
+    data.description = data.description || { es: '', en: '' };
+    Object.assign(categoryForm, data);
     categorySectionTab.value = 'form';
 };
 
 const fillCapability = (capability) => {
-    Object.assign(capabilityForm, JSON.parse(JSON.stringify(capability)));
+    const data = JSON.parse(JSON.stringify(capability));
+    data.name = data.name || { es: '', en: '' };
+    data.description = data.description || { es: '', en: '' };
+    Object.assign(capabilityForm, data);
     capabilitySectionTab.value = 'form';
 };
 
