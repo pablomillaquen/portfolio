@@ -1,5 +1,6 @@
 <script setup>
 import { computed, inject, reactive, ref } from 'vue';
+import { useHead } from '@vueuse/head';
 import { api } from '../services/api';
 
 const site = inject('site');
@@ -11,6 +12,16 @@ const form = reactive({
 const state = ref('idle');
 
 const contact = computed(() => site.settings.value?.contact || {});
+
+useHead({
+    title: 'Contacto | Pablo Millaquen',
+    meta: [
+        { name: 'description', content: 'Contacta con Pablo Millaquen para oportunidades de colaboración.' },
+        { property: 'og:title', content: 'Contacto | Pablo Millaquen' },
+        { property: 'og:description', content: 'Contacta con Pablo Millaquen para oportunidades de colaboración.' },
+        { property: 'og:type', content: 'website' },
+    ],
+});
 
 const submit = async () => {
     state.value = 'loading';

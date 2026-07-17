@@ -1,6 +1,7 @@
 <script setup>
 import { computed, inject, onMounted, ref, watch } from 'vue';
 import { RouterLink } from 'vue-router';
+import { useHead } from '@vueuse/head';
 import { api } from '../services/api';
 import CapabilityCard from '../components/CapabilityCard.vue';
 
@@ -11,6 +12,16 @@ const showModal = ref(false);
 const capabilities = ref([]);
 
 const locale = computed(() => site.locale.value);
+
+useHead({
+    title: 'Pablo Millaquen — Desarrollador & Investigador',
+    meta: [
+        { name: 'description', content: 'Portfolio profesional de Pablo Millaquen. Desarrollador de software e investigador especializado en logística, IA y arquitectura de software.' },
+        { property: 'og:title', content: 'Pablo Millaquen — Desarrollador & Investigador' },
+        { property: 'og:description', content: 'Portfolio profesional de Pablo Millaquen. Desarrollador de software e investigador especializado en logística, IA y arquitectura de software.' },
+        { property: 'og:type', content: 'website' },
+    ],
+});
 
 const defaultVideoUrl = 'https://www.youtube.com/embed/cs6xpqg1aUg';
 

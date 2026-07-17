@@ -1,2 +1,6 @@
 User-agent: *
-Disallow:
+Disallow: /admin
+Disallow: /api/
+Disallow: /optimize-app
+
+Sitemap: https://pablomillaquen.com/sitemap.xml

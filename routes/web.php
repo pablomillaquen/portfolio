@@ -12,6 +12,7 @@ use App\Http\Controllers\Api\AdminCapabilityController;
 use App\Http\Controllers\Api\AuthController;
 use App\Http\Controllers\Api\ContactController;
 use App\Http\Controllers\Api\PublicContentController;
+use App\Http\Controllers\Api\SeoController;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Facades\Artisan;
 
@@ -29,6 +30,11 @@ Route::prefix('api')->group(function (): void {
     Route::get('/capabilities', [PublicContentController::class, 'capabilities']);
     Route::get('/categories', [PublicContentController::class, 'categories']);
     Route::get('/seasons', [PublicContentController::class, 'seasons']);
+
+    Route::get('/seo/home', [SeoController::class, 'home']);
+    Route::get('/seo/project/{slug}', [SeoController::class, 'project']);
+    Route::get('/seo/post/{slug}', [SeoController::class, 'post']);
+    Route::get('/seo/course/{slug}', [SeoController::class, 'course']);
 
     Route::post('/auth/login', [AuthController::class, 'login']);
     Route::post('/auth/logout', [AuthController::class, 'logout']);

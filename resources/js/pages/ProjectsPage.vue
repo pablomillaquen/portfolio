@@ -1,6 +1,7 @@
 <script setup>
 import { inject, onMounted, ref, watch, computed } from 'vue';
 import { RouterLink } from 'vue-router';
+import { useHead } from '@vueuse/head';
 import { api } from '../services/api';
 import CategoryFilter from '../components/CategoryFilter.vue';
 
@@ -10,6 +11,16 @@ const categories = ref([]);
 const selectedCategories = ref([]);
 
 const locale = computed(() => site.locale.value);
+
+useHead({
+    title: 'Proyectos | Pablo Millaquen',
+    meta: [
+        { name: 'description', content: 'Explora los proyectos de desarrollo de software e investigación de Pablo Millaquen.' },
+        { property: 'og:title', content: 'Proyectos | Pablo Millaquen' },
+        { property: 'og:description', content: 'Explora los proyectos de desarrollo de software e investigación de Pablo Millaquen.' },
+        { property: 'og:type', content: 'website' },
+    ],
+});
 
 const loadProjects = async () => {
     const params = { locale: site.locale.value };

@@ -1,10 +1,21 @@
 <script setup>
 import { inject, onMounted, ref, watch } from 'vue';
 import { RouterLink } from 'vue-router';
+import { useHead } from '@vueuse/head';
 import { api } from '../services/api';
 
 const site = inject('site');
 const courses = ref([]);
+
+useHead({
+    title: 'Cursos y Certificaciones | Pablo Millaquen',
+    meta: [
+        { name: 'description', content: 'Cursos y certificaciones completados por Pablo Millaquen.' },
+        { property: 'og:title', content: 'Cursos y Certificaciones | Pablo Millaquen' },
+        { property: 'og:description', content: 'Cursos y certificaciones completados por Pablo Millaquen.' },
+        { property: 'og:type', content: 'website' },
+    ],
+});
 
 const load = async () => {
     const { data } = await api.get('/api/courses', { params: { locale: site.locale.value } });

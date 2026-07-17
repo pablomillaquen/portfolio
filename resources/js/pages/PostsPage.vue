@@ -1,5 +1,6 @@
 <script setup>
 import { computed, inject, onMounted, ref, watch } from 'vue';
+import { useHead } from '@vueuse/head';
 import { api } from '../services/api';
 
 const site = inject('site');
@@ -9,6 +10,16 @@ const query = ref('');
 const selectedSeason = ref(null);
 
 const locale = computed(() => site.locale.value);
+
+useHead({
+    title: 'Publicaciones | Pablo Millaquen',
+    meta: [
+        { name: 'description', content: 'Artículos y publicaciones sobre desarrollo de software, investigación y tecnología.' },
+        { property: 'og:title', content: 'Publicaciones | Pablo Millaquen' },
+        { property: 'og:description', content: 'Artículos y publicaciones sobre desarrollo de software, investigación y tecnología.' },
+        { property: 'og:type', content: 'website' },
+    ],
+});
 
 const loadPosts = async () => {
     const params = { locale: site.locale.value };

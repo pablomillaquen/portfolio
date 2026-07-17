@@ -1,12 +1,14 @@
 <script setup>
 import { computed, inject, onMounted, ref, watch } from 'vue';
 import { RouterLink, useRoute } from 'vue-router';
+import { useHead } from '@vueuse/head';
 import { api } from '../services/api';
 import FutureContentIndicator from '../components/FutureContentIndicator.vue';
 
 const site = inject('site');
 const route = useRoute();
 const post = ref(null);
+const seoData = ref({});
 
 const locale = computed(() => site.locale.value);
 
@@ -20,6 +22,53 @@ const shareUrl = computed(() => {
     return `https://www.linkedin.com/sharing/share-offsite/?url=${url}&title=${title}`;
 });
 
+const loadSeo = async () => {
+    try {
+        const { data } = await api.get(`/api/seo/post/${route.params.slug}`, {
+            params: { locale: site.locale.value },
+        });
+        seoData.value = data;
+    } catch {
+        seoData.value = {};
+    }
+};
+
+useHead(() => {
+    const jsonLd = post.value ? {
+        '@context': 'https://schema.org',
+        '@type': 'Article',
+        'headline': post.value.title,
+        'description': post.value.excerpt,
+        'author': { '@type': 'Person', 'name': 'Pablo Millaquen' },
+        'datePublished': seoData.value.publishedAt || '',
+        'url': seoData.value.url || window.location.href,
+        'image': post.value.coverImageUrl || seoData.value.image || '',
+    } : null;
+
+    return {
+        title: seoData.value.title || 'Publicación | Pablo Millaquen',
+        meta: [
+            { name: 'description', content: seoData.value.description || '' },
+            { property: 'og:title', content: seoData.value.title || '' },
+            { property: 'og:description', content: seoData.value.description || '' },
+            { property: 'og:image', content: seoData.value.image || '' },
+            { property: 'og:url', content: seoData.value.url || '' },
+            { property: 'og:type', content: 'article' },
+            { property: 'article:published_time', content: seoData.value.publishedAt || '' },
+            { name: 'twitter:card', content: 'summary_large_image' },
+            { name: 'twitter:title', content: seoData.value.title || '' },
+            { name: 'twitter:description', content: seoData.value.description || '' },
+            { name: 'twitter:image', content: seoData.value.image || '' },
+        ],
+        link: [
+            { rel: 'canonical', href: seoData.value.url || '' },
+            { rel: 'alternate', hreflang: 'es', href: seoData.value.alternates?.es || '' },
+            { rel: 'alternate', hreflang: 'en', href: seoData.value.alternates?.en || '' },
+        ],
+        script: jsonLd ? [{ type: 'application/ld+json', innerHTML: JSON.stringify(jsonLd) }] : [],
+    };
+});
+
 const load = async () => {
     const { data } = await api.get(`/api/posts/${route.params.slug}`, {
         params: { locale: site.locale.value },
@@ -27,8 +76,14 @@ const load = async () => {
     post.value = data;
 };
 
-watch(() => [site.locale.value, route.params.slug], load);
-onMounted(load);
+watch(() => [site.locale.value, route.params.slug], () => {
+    load();
+    loadSeo();
+});
+onMounted(() => {
+    load();
+    loadSeo();
+});
 </script>
 
 <template>
