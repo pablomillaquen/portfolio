@@ -12,7 +12,7 @@ class AdminPostController extends Controller
     public function index()
     {
         return response()->json(
-            Post::query()->orderByDesc('featured')->orderByDesc('published_at')->get()
+            Post::query()->with('season')->orderByDesc('featured')->orderByDesc('published_at')->get()
         );
     }
 
@@ -61,11 +61,15 @@ class AdminPostController extends Controller
             'content.es' => ['nullable', 'string'],
             'content.en' => ['nullable', 'string'],
             'published_at' => ['nullable', 'date'],
+            'season_id' => ['nullable', 'integer', 'exists:seasons,id'],
+            'episode_number' => ['nullable', 'integer', 'min:1'],
         ]);
 
         $data['slug'] = $data['slug'] ?: Str::slug($data['title']['en'] ?? $data['title']['es']);
         $data['featured'] = $data['featured'] ?? false;
         $data['share_enabled'] = $data['share_enabled'] ?? true;
+        $data['season_id'] = $data['season_id'] ?? null;
+        $data['episode_number'] = $data['episode_number'] ?? null;
 
         return $data;
     }

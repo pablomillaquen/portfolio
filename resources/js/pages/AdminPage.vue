@@ -7,12 +7,18 @@ const site = inject('site');
 const tab = ref('projects');
 const projectSectionTab = ref('list');
 const postSectionTab = ref('list');
+const seasonSectionTab = ref('list');
+const categorySectionTab = ref('list');
+const capabilitySectionTab = ref('list');
 const message = ref('');
 const error = ref('');
 const projects = ref([]);
 const posts = ref([]);
 const courses = ref([]);
-const socialLinks = ref([]);
+const seasons = ref([]);
+const categories = ref([]);
+const capabilities = ref([]);
+const socialLinks = ref({});
 const settings = ref({});
 const credentials = reactive({
     email: '',
@@ -42,6 +48,8 @@ const blankProject = () => ({
     stackInput: '',
     media: [],
     published_at: '',
+    categories: [],
+    capabilities: [],
 });
 
 const blankPost = () => ({
@@ -57,6 +65,8 @@ const blankPost = () => ({
     excerpt: { es: '', en: '' },
     content: { es: '', en: '' },
     published_at: '',
+    season_id: null,
+    episode_number: null,
 });
 
 const blankCourse = () => ({
@@ -72,9 +82,37 @@ const blankCourse = () => ({
     url: '',
 });
 
+const blankSeason = () => ({
+    id: null,
+    slug: '',
+    status: 'draft',
+    sort_order: 0,
+    name: { es: '', en: '' },
+    description: { es: '', en: '' },
+});
+
+const blankCategory = () => ({
+    id: null,
+    slug: '',
+    dimension: 'domain',
+    name: { es: '', en: '' },
+    description: { es: '', en: '' },
+});
+
+const blankCapability = () => ({
+    id: null,
+    slug: '',
+    sort_order: 0,
+    name: { es: '', en: '' },
+    description: { es: '', en: '' },
+});
+
 const projectForm = reactive(blankProject());
 const postForm = reactive(blankPost());
 const courseForm = reactive(blankCourse());
+const seasonForm = reactive(blankSeason());
+const categoryForm = reactive(blankCategory());
+const capabilityForm = reactive(blankCapability());
 const stackJson = ref('[]');
 const experienceJson = ref('[]');
 
@@ -89,6 +127,21 @@ const resetPostForm = () => {
     postSectionTab.value = 'form';
 };
 const resetCourseForm = () => Object.assign(courseForm, blankCourse());
+
+const resetSeasonForm = () => {
+    Object.assign(seasonForm, blankSeason());
+    seasonSectionTab.value = 'form';
+};
+
+const resetCategoryForm = () => {
+    Object.assign(categoryForm, blankCategory());
+    categorySectionTab.value = 'form';
+};
+
+const resetCapabilityForm = () => {
+    Object.assign(capabilityForm, blankCapability());
+    capabilitySectionTab.value = 'form';
+};
 
 const fillProject = (project) => {
     Object.assign(projectForm, JSON.parse(JSON.stringify(project)));
@@ -108,13 +161,31 @@ const fillCourse = (course) => {
     }
 };
 
+const fillSeason = (season) => {
+    Object.assign(seasonForm, JSON.parse(JSON.stringify(season)));
+    seasonSectionTab.value = 'form';
+};
+
+const fillCategory = (category) => {
+    Object.assign(categoryForm, JSON.parse(JSON.stringify(category)));
+    categorySectionTab.value = 'form';
+};
+
+const fillCapability = (capability) => {
+    Object.assign(capabilityForm, JSON.parse(JSON.stringify(capability)));
+    capabilitySectionTab.value = 'form';
+};
+
 const loadAdminData = async () => {
-    const [{ data: projectData }, { data: postData }, { data: courseData }, { data: socialData }, { data: settingsData }] = await Promise.all([
+    const [{ data: projectData }, { data: postData }, { data: courseData }, { data: socialData }, { data: settingsData }, { data: seasonData }, { data: categoryData }, { data: capabilityData }] = await Promise.all([
         api.get('/api/admin/projects'),
         api.get('/api/admin/posts'),
         api.get('/api/admin/courses'),
         api.get('/api/admin/social-links'),
         api.get('/api/admin/settings'),
+        api.get('/api/admin/seasons'),
+        api.get('/api/admin/categories'),
+        api.get('/api/admin/capabilities'),
     ]);
 
     projects.value = projectData;
@@ -122,6 +193,9 @@ const loadAdminData = async () => {
     courses.value = courseData;
     socialLinks.value = socialData;
     settings.value = settingsData;
+    seasons.value = seasonData.data;
+    categories.value = categoryData.data;
+    capabilities.value = capabilityData.data;
     stackJson.value = JSON.stringify(settingsData.stack || [], null, 2);
     experienceJson.value = JSON.stringify(settingsData.experience || [], null, 2);
 };
@@ -196,6 +270,57 @@ const saveCourse = async () => {
 
 const deleteCourse = async (id) => {
     await api.delete(`/api/admin/courses/${id}`);
+    await loadAdminData();
+};
+
+const saveSeason = async () => {
+    if (seasonForm.id) {
+        await api.put(`/api/admin/seasons/${seasonForm.id}`, seasonForm);
+    } else {
+        await api.post('/api/admin/seasons', seasonForm);
+    }
+
+    await loadAdminData();
+    message.value = 'Season saved.';
+    seasonSectionTab.value = 'form';
+};
+
+const deleteSeason = async (id) => {
+    await api.delete(`/api/admin/seasons/${id}`);
+    await loadAdminData();
+};
+
+const saveCategory = async () => {
+    if (categoryForm.id) {
+        await api.put(`/api/admin/categories/${categoryForm.id}`, categoryForm);
+    } else {
+        await api.post('/api/admin/categories', categoryForm);
+    }
+
+    await loadAdminData();
+    message.value = 'Category saved.';
+    categorySectionTab.value = 'form';
+};
+
+const deleteCategory = async (id) => {
+    await api.delete(`/api/admin/categories/${id}`);
+    await loadAdminData();
+};
+
+const saveCapability = async () => {
+    if (capabilityForm.id) {
+        await api.put(`/api/admin/capabilities/${capabilityForm.id}`, capabilityForm);
+    } else {
+        await api.post('/api/admin/capabilities', capabilityForm);
+    }
+
+    await loadAdminData();
+    message.value = 'Capability saved.';
+    capabilitySectionTab.value = 'form';
+};
+
+const deleteCapability = async (id) => {
+    await api.delete(`/api/admin/capabilities/${id}`);
     await loadAdminData();
 };
 
@@ -305,7 +430,7 @@ onMounted(async () => {
             </header>
 
             <div class="admin-tabs">
-                <button v-for="item in ['projects', 'posts', 'courses', 'settings', 'social']" :key="item" :class="{ active: tab === item }" @click="tab = item">
+                <button v-for="item in ['projects', 'posts', 'seasons', 'categories', 'capabilities', 'courses', 'settings', 'social']" :key="item" :class="{ active: tab === item }" @click="tab = item">
                     {{ item }}
                 </button>
             </div>
@@ -382,6 +507,24 @@ onMounted(async () => {
                             <input v-model="item.caption.en" placeholder="Caption EN">
                         </div>
                     </div>
+                    <div class="sub-editor">
+                        <h3>Categories</h3>
+                        <div class="checkbox-grid">
+                            <label v-for="cat in categories" :key="cat.id">
+                                <input type="checkbox" :value="cat.id" v-model="projectForm.categories">
+                                {{ cat.name?.en || cat.slug }}
+                            </label>
+                        </div>
+                    </div>
+                    <div class="sub-editor">
+                        <h3>Capabilities</h3>
+                        <div class="checkbox-grid">
+                            <label v-for="cap in capabilities" :key="cap.id">
+                                <input type="checkbox" :value="cap.id" v-model="projectForm.capabilities">
+                                {{ cap.name?.en || cap.slug }}
+                            </label>
+                        </div>
+                    </div>
                     <div class="cta-row">
                         <button class="primary-button" type="submit">Save project</button>
                         <button class="secondary-button" type="button" @click="openPreview('project')">Preview</button>
@@ -401,6 +544,7 @@ onMounted(async () => {
                             <span class="star-indicator" :class="{ 'is-featured': post.featured }">★</span>
                             <strong>{{ post.title.en }}</strong>
                             <span>{{ post.type }}</span>
+                            <span v-if="post.season" class="season-badge">{{ post.season.name?.en || post.season.slug }} #{{ post.episode_number }}</span>
                         </button>
                     </div>
                 </div>
@@ -430,6 +574,13 @@ onMounted(async () => {
                         <label><input v-model="postForm.share_enabled" type="checkbox"> Share enabled</label>
                     </div>
                     <div class="two-column">
+                        <select v-model="postForm.season_id">
+                            <option :value="null">Sin temporada</option>
+                            <option v-for="season in seasons" :key="season.id" :value="season.id">{{ season.name?.en || season.slug }}</option>
+                        </select>
+                        <input v-model.number="postForm.episode_number" type="number" min="1" placeholder="Episode number">
+                    </div>
+                    <div class="two-column">
                         <textarea v-model="postForm.excerpt.es" rows="3" placeholder="Extracto ES" />
                         <textarea v-model="postForm.excerpt.en" rows="3" placeholder="Excerpt EN" />
                         <textarea v-model="postForm.content.es" rows="8" placeholder="Contenido ES" />
@@ -439,6 +590,123 @@ onMounted(async () => {
                         <button class="primary-button" type="submit">Save post</button>
                         <button class="secondary-button" type="button" @click="openPreview('post')">Preview</button>
                         <button v-if="postForm.id" class="danger-button" type="button" @click="deletePost(postForm.id)">Delete</button>
+                    </div>
+                </form>
+            </section>
+
+            <section v-if="tab === 'seasons'">
+                <div v-if="seasonSectionTab === 'list'" class="panel">
+                    <div class="section-heading">
+                        <h2>Seasons</h2>
+                        <button class="ghost-button" @click="resetSeasonForm">New</button>
+                    </div>
+                    <div class="admin-list">
+                        <button v-for="season in seasons" :key="season.id" class="admin-list-item" @click="fillSeason(season)">
+                            <strong>{{ season.name?.en || season.slug }}</strong>
+                            <span>{{ season.status }}</span>
+                        </button>
+                    </div>
+                </div>
+                <form v-if="seasonSectionTab === 'form'" class="panel editor-form" @submit.prevent="saveSeason">
+                    <div class="section-heading">
+                        <button class="ghost-button" type="button" @click="seasonSectionTab = 'list'">← Back</button>
+                        <h2>{{ seasonForm.id ? 'Edit season' : 'New season' }}</h2>
+                    </div>
+                    <div class="two-column">
+                        <input v-model="seasonForm.name.es" placeholder="Nombre ES">
+                        <input v-model="seasonForm.name.en" placeholder="Name EN">
+                        <input v-model="seasonForm.slug" placeholder="Slug">
+                        <input v-model.number="seasonForm.sort_order" type="number" min="0" placeholder="Sort order">
+                    </div>
+                    <div class="editor-toggles">
+                        <select v-model="seasonForm.status">
+                            <option value="draft">Draft</option>
+                            <option value="upcoming">Upcoming</option>
+                            <option value="active">Active</option>
+                            <option value="completed">Completed</option>
+                        </select>
+                    </div>
+                    <div class="two-column">
+                        <textarea v-model="seasonForm.description.es" rows="3" placeholder="Descripcion ES" />
+                        <textarea v-model="seasonForm.description.en" rows="3" placeholder="Description EN" />
+                    </div>
+                    <div class="cta-row">
+                        <button class="primary-button" type="submit">Save season</button>
+                        <button v-if="seasonForm.id" class="danger-button" type="button" @click="deleteSeason(seasonForm.id)">Delete</button>
+                    </div>
+                </form>
+            </section>
+
+            <section v-if="tab === 'categories'">
+                <div v-if="categorySectionTab === 'list'" class="panel">
+                    <div class="section-heading">
+                        <h2>Categories</h2>
+                        <button class="ghost-button" @click="resetCategoryForm">New</button>
+                    </div>
+                    <div class="admin-list">
+                        <button v-for="category in categories" :key="category.id" class="admin-list-item" @click="fillCategory(category)">
+                            <strong>{{ category.name?.en || category.slug }}</strong>
+                            <span>{{ category.dimension }}</span>
+                        </button>
+                    </div>
+                </div>
+                <form v-if="categorySectionTab === 'form'" class="panel editor-form" @submit.prevent="saveCategory">
+                    <div class="section-heading">
+                        <button class="ghost-button" type="button" @click="categorySectionTab = 'list'">← Back</button>
+                        <h2>{{ categoryForm.id ? 'Edit category' : 'New category' }}</h2>
+                    </div>
+                    <div class="two-column">
+                        <input v-model="categoryForm.name.es" placeholder="Nombre ES">
+                        <input v-model="categoryForm.name.en" placeholder="Name EN">
+                        <input v-model="categoryForm.slug" placeholder="Slug">
+                        <select v-model="categoryForm.dimension">
+                            <option value="domain">Domain</option>
+                            <option value="capability">Capability</option>
+                            <option value="technology">Technology</option>
+                            <option value="methodology">Methodology</option>
+                        </select>
+                    </div>
+                    <div class="two-column">
+                        <textarea v-model="categoryForm.description.es" rows="3" placeholder="Descripcion ES" />
+                        <textarea v-model="categoryForm.description.en" rows="3" placeholder="Description EN" />
+                    </div>
+                    <div class="cta-row">
+                        <button class="primary-button" type="submit">Save category</button>
+                        <button v-if="categoryForm.id" class="danger-button" type="button" @click="deleteCategory(categoryForm.id)">Delete</button>
+                    </div>
+                </form>
+            </section>
+
+            <section v-if="tab === 'capabilities'">
+                <div v-if="capabilitySectionTab === 'list'" class="panel">
+                    <div class="section-heading">
+                        <h2>Capabilities</h2>
+                        <button class="ghost-button" @click="resetCapabilityForm">New</button>
+                    </div>
+                    <div class="admin-list">
+                        <button v-for="capability in capabilities" :key="capability.id" class="admin-list-item" @click="fillCapability(capability)">
+                            <strong>{{ capability.name?.en || capability.slug }}</strong>
+                        </button>
+                    </div>
+                </div>
+                <form v-if="capabilitySectionTab === 'form'" class="panel editor-form" @submit.prevent="saveCapability">
+                    <div class="section-heading">
+                        <button class="ghost-button" type="button" @click="capabilitySectionTab = 'list'">← Back</button>
+                        <h2>{{ capabilityForm.id ? 'Edit capability' : 'New capability' }}</h2>
+                    </div>
+                    <div class="two-column">
+                        <input v-model="capabilityForm.name.es" placeholder="Nombre ES">
+                        <input v-model="capabilityForm.name.en" placeholder="Name EN">
+                        <input v-model="capabilityForm.slug" placeholder="Slug">
+                        <input v-model.number="capabilityForm.sort_order" type="number" min="0" placeholder="Sort order">
+                    </div>
+                    <div class="two-column">
+                        <textarea v-model="capabilityForm.description.es" rows="3" placeholder="Descripcion ES" />
+                        <textarea v-model="capabilityForm.description.en" rows="3" placeholder="Description EN" />
+                    </div>
+                    <div class="cta-row">
+                        <button class="primary-button" type="submit">Save capability</button>
+                        <button v-if="capabilityForm.id" class="danger-button" type="button" @click="deleteCapability(capabilityForm.id)">Delete</button>
                     </div>
                 </form>
             </section>

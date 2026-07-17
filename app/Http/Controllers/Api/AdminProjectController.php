@@ -22,8 +22,10 @@ class AdminProjectController extends Controller
         $payload['status'] = $this->resolveStatus($payload);
         $project = Project::query()->create($payload);
         $this->syncMedia($project, $request->input('media', []));
+        $project->categories()->sync($request->input('categories', []));
+        $project->capabilities()->sync($request->input('capabilities', []));
 
-        return response()->json($project->load('media'), 201);
+        return response()->json($project->load(['media', 'categories', 'capabilities']), 201);
     }
 
     public function update(Request $request, Project $project)
@@ -32,8 +34,10 @@ class AdminProjectController extends Controller
         $payload['status'] = $this->resolveStatus($payload, $project);
         $project->update($payload);
         $this->syncMedia($project, $request->input('media', []));
+        $project->categories()->sync($request->input('categories', []));
+        $project->capabilities()->sync($request->input('capabilities', []));
 
-        return response()->json($project->load('media'));
+        return response()->json($project->load(['media', 'categories', 'capabilities']));
     }
 
     public function destroy(Project $project)
