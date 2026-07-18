@@ -81,8 +81,16 @@ Route::prefix('api')->group(function (): void {
     });
 });
 
-Route::get('/{any?}', fn () => view('app'))
-    ->where('any', '.*');
+Route::get('/{any?}', function () {
+    return view('app', [
+        'seo' => [
+            'title' => 'Pablo Millaquen — Desarrollador & Investigador',
+            'description' => 'Portfolio profesional de Pablo Millaquen. Desarrollador de software e investigador especializado en logística, IA y arquitectura de software.',
+            'image' => asset('img/og_image.png'),
+            'url' => url('/'),
+        ],
+    ]);
+})->where('any', '.*');
 
 
 Route::get('/optimize-app', function () {
