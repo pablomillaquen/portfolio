@@ -19,9 +19,12 @@ const links = [
 
 <template>
     <div class="site-shell">
+        <a href="#main-content" class="skip-link">
+            {{ site.locale.value === 'en' ? 'Skip to main content' : 'Saltar al contenido principal' }}
+        </a>
         <header class="site-header">
             <RouterLink class="brand-mark" to="/">{{ brand }}</RouterLink>
-            <nav class="primary-nav">
+            <nav class="primary-nav" :aria-label="site.locale.value === 'en' ? 'Main navigation' : 'Navegación principal'">
                 <RouterLink
                     v-for="link in links"
                     :key="link.to"
@@ -32,11 +35,18 @@ const links = [
                 </RouterLink>
             </nav>
             <div class="toolbar">
-                <button class="ghost-button" @click="site.toggleTheme">
+                <button
+                    class="ghost-button"
+                    :aria-label="site.locale.value === 'en'
+                        ? (site.theme.value === 'dark' ? 'Switch to light mode' : 'Switch to dark mode')
+                        : (site.theme.value === 'dark' ? 'Cambiar a modo claro' : 'Cambiar a modo oscuro')"
+                    @click="site.toggleTheme"
+                >
                     {{ site.theme.value === 'dark' ? 'Light' : 'Dark' }}
                 </button>
                 <button
                     class="ghost-button"
+                    :aria-label="site.locale.value === 'en' ? 'Switch to Spanish' : 'Cambiar a inglés'"
                     @click="site.setLocale(site.locale.value === 'en' ? 'es' : 'en')"
                 >
                     {{ site.locale.value.toUpperCase() }}
@@ -45,7 +55,7 @@ const links = [
             </div>
         </header>
 
-        <main class="page-frame">
+        <main id="main-content" tabindex="-1" class="page-frame">
             <slot />
         </main>
 

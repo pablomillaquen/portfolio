@@ -29,6 +29,7 @@ const isSelected = (slug) => {
             v-for="category in categories"
             :key="category.slug"
             :class="['filter-button', { active: isSelected(category.slug) }]"
+            :aria-pressed="isSelected(category.slug)"
             @click="toggleCategory(category.slug)"
         >
             {{ category.name }}

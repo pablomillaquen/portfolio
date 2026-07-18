@@ -1,7 +1,8 @@
 <script setup>
-import { computed, inject, onMounted, ref, watch } from 'vue';
+import { computed, inject, onMounted, ref, watch, nextTick } from 'vue';
 import { RouterLink } from 'vue-router';
 import { useHead } from '@vueuse/head';
+import { useFocusTrap } from '@vueuse/integrations/useFocusTrap';
 import { api } from '../services/api';
 import CapabilityCard from '../components/CapabilityCard.vue';
 
@@ -10,6 +11,8 @@ const loading = ref(true);
 const payload = ref(null);
 const showModal = ref(false);
 const capabilities = ref([]);
+const modalRef = ref(null);
+const triggerRef = ref(null);
 
 const locale = computed(() => site.locale.value);
 
@@ -35,8 +38,43 @@ const modalEnabled = computed(() => {
     return payload.value.settings.welcome_modal_enabled !== false;
 });
 
-const openModal = () => { showModal.value = true; };
-const closeModal = () => { showModal.value = false; };
+const openModal = (event) => {
+    triggerRef.value = event?.currentTarget || null;
+    showModal.value = true;
+};
+const closeModal = () => {
+    showModal.value = false;
+    const trigger = triggerRef.value;
+    triggerRef.value = null;
+    if (trigger) {
+        nextTick(() => trigger.focus());
+    }
+};
+
+const { activate, deactivate } = useFocusTrap(modalRef, {
+    immediate: false,
+    escapeDeactivates: true,
+    returnFocusOnDeactivate: false,
+});
+
+function onModalKeydown(e) {
+    if (e.key === 'Escape' && showModal.value) {
+        closeModal();
+    }
+}
+
+watch(showModal, async (open) => {
+    if (open) {
+        document.body.classList.add('modal-open');
+        document.addEventListener('keydown', onModalKeydown);
+        await nextTick();
+        activate();
+    } else {
+        document.body.classList.remove('modal-open');
+        document.removeEventListener('keydown', onModalKeydown);
+        deactivate();
+    }
+});
 
 const loadData = async () => {
     loading.value = true;
@@ -68,7 +106,7 @@ onMounted(loadData);
                     <RouterLink class="primary-button" to="/projects">
                         {{ locale === 'es' ? 'Ver proyectos' : 'View projects' }}
                     </RouterLink>
-                    <button class="secondary-button" @click="openModal">
+                    <button class="secondary-button" @click="openModal($event)">
                         {{ locale === 'es' ? 'Ver video' : 'Watch video' }}
                     </button>
                     <RouterLink class="secondary-button" to="/contact">
@@ -79,7 +117,8 @@ onMounted(loadData);
             <img
                 class="profile-image"
                 :src="payload.settings.home.profileImage"
-                alt="Profile"
+                alt=""
+                aria-hidden="true"
             >
         </section>
 
@@ -166,9 +205,17 @@ onMounted(loadData);
     </div>
 
     <Teleport to="body">
-        <div v-if="showModal" class="modal-overlay" @click.self="closeModal">
+        <div
+            v-if="showModal"
+            ref="modalRef"
+            class="modal-overlay"
+            role="dialog"
+            aria-modal="true"
+            :aria-label="locale === 'es' ? 'Video de bienvenida' : 'Welcome video'"
+            @click.self="closeModal"
+        >
             <div class="modal-content">
-                <button class="modal-close" @click="closeModal">&times;</button>
+                <button class="modal-close" :aria-label="locale === 'es' ? 'Cerrar diálogo' : 'Close dialog'" @click="closeModal">&times;</button>
                 <iframe
                     :src="videoUrl"
                     title="Welcome video"

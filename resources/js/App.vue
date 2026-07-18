@@ -4,6 +4,9 @@ import { useRoute } from 'vue-router';
 import { useHead } from '@vueuse/head';
 import PublicShell from './components/PublicShell.vue';
 import { api } from './services/api';
+import { useAnnouncer } from './composables/useAnnouncer';
+
+const { politeMessage, assertiveMessage } = useAnnouncer();
 
 const route = useRoute();
 const locale = ref(localStorage.getItem('portfolio-locale') || 'en');
@@ -115,6 +118,16 @@ provide('site', {
 </script>
 
 <template>
+    <div
+        aria-live="polite"
+        aria-atomic="true"
+        class="sr-only"
+    >{{ politeMessage }}</div>
+    <div
+        aria-live="assertive"
+        aria-atomic="true"
+        class="sr-only"
+    >{{ assertiveMessage }}</div>
     <PublicShell v-if="!isAdminRoute">
         <router-view />
     </PublicShell>

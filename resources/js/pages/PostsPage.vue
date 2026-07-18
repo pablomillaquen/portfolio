@@ -2,8 +2,10 @@
 import { computed, inject, onMounted, ref, watch } from 'vue';
 import { useHead } from '@vueuse/head';
 import { api } from '../services/api';
+import { useAnnouncer } from '../composables/useAnnouncer';
 
 const site = inject('site');
+const { announce } = useAnnouncer();
 const posts = ref([]);
 const seasons = ref([]);
 const query = ref('');
@@ -37,12 +39,22 @@ const loadSeasons = async () => {
 
 const selectSeason = (slug) => {
     selectedSeason.value = selectedSeason.value === slug ? null : slug;
-    loadPosts();
+    loadPosts().then(() => {
+        announce(
+            `${filtered.value.length} ${locale.value === 'es' ? 'resultados' : 'results'}`,
+            'polite'
+        );
+    });
 };
 
 const clearSeason = () => {
     selectedSeason.value = null;
-    loadPosts();
+    loadPosts().then(() => {
+        announce(
+            `${filtered.value.length} ${locale.value === 'es' ? 'resultados' : 'results'}`,
+            'polite'
+        );
+    });
 };
 
 const filtered = computed(() =>
@@ -72,6 +84,7 @@ onMounted(loadData);
         <div v-if="seasons.length > 0" class="season-filter">
             <button
                 :class="['filter-button', { active: !selectedSeason }]"
+                :aria-pressed="!selectedSeason"
                 @click="clearSeason"
             >
                 {{ locale === 'es' ? 'Todas' : 'All' }}
@@ -80,6 +93,7 @@ onMounted(loadData);
                 v-for="season in seasons"
                 :key="season.id"
                 :class="['filter-button', { active: selectedSeason === season.slug }]"
+                :aria-pressed="selectedSeason === season.slug"
                 @click="selectSeason(season.slug)"
             >
                 {{ season.name }}

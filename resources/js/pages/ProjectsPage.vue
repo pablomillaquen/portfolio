@@ -4,8 +4,10 @@ import { RouterLink } from 'vue-router';
 import { useHead } from '@vueuse/head';
 import { api } from '../services/api';
 import CategoryFilter from '../components/CategoryFilter.vue';
+import { useAnnouncer } from '../composables/useAnnouncer';
 
 const site = inject('site');
+const { announce } = useAnnouncer();
 const projects = ref([]);
 const categories = ref([]);
 const selectedCategories = ref([]);
@@ -43,7 +45,12 @@ const toggleCategory = (slug) => {
     } else {
         selectedCategories.value.splice(index, 1);
     }
-    loadProjects();
+    loadProjects().then(() => {
+        announce(
+            `${projects.value.length} ${locale.value === 'es' ? 'resultados' : 'results'}`,
+            'polite'
+        );
+    });
 };
 
 const loadData = async () => {

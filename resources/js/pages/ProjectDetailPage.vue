@@ -1,7 +1,8 @@
 <script setup>
-import { inject, onMounted, ref, watch } from 'vue';
+import { inject, onMounted, ref, watch, nextTick } from 'vue';
 import { RouterLink, useRoute } from 'vue-router';
 import { useHead } from '@vueuse/head';
+import { useFocusTrap } from '@vueuse/integrations/useFocusTrap';
 import { api } from '../services/api';
 
 const site = inject('site');
@@ -10,6 +11,8 @@ const project = ref(null);
 const showVideoModal = ref(false);
 const videoUrl = ref('');
 const seoData = ref({});
+const modalRef = ref(null);
+const triggerRef = ref(null);
 
 const loadSeo = async () => {
     try {
@@ -63,15 +66,46 @@ const load = async () => {
     project.value = data;
 };
 
-const openVideo = (url) => {
+const openVideo = (url, event) => {
     videoUrl.value = url;
+    triggerRef.value = event?.currentTarget || null;
     showVideoModal.value = true;
 };
 
 const closeVideo = () => {
     showVideoModal.value = false;
     videoUrl.value = '';
+    const trigger = triggerRef.value;
+    triggerRef.value = null;
+    if (trigger) {
+        nextTick(() => trigger.focus());
+    }
 };
+
+const { activate, deactivate } = useFocusTrap(modalRef, {
+    immediate: false,
+    escapeDeactivates: true,
+    returnFocusOnDeactivate: false,
+});
+
+function onModalKeydown(e) {
+    if (e.key === 'Escape' && showVideoModal.value) {
+        closeVideo();
+    }
+}
+
+watch(showVideoModal, async (open) => {
+    if (open) {
+        document.body.classList.add('modal-open');
+        document.addEventListener('keydown', onModalKeydown);
+        await nextTick();
+        activate();
+    } else {
+        document.body.classList.remove('modal-open');
+        document.removeEventListener('keydown', onModalKeydown);
+        deactivate();
+    }
+});
 
 const getYouTubeId = (url) => {
     const match = url.match(/(?:youtu\.be\/|youtube\.com\/(?:embed\/|v\/|watch\?v=|watch\?.+&v=))([^&?#]+)/);
@@ -178,7 +212,7 @@ onMounted(() => {
                     <button
                         v-else
                         class="video-thumbnail"
-                        @click="openVideo(item.url)"
+                        @click="openVideo(item.url, $event)"
                     >
                         <img loading="lazy" :src="getYouTubeThumbnail(item.url)" :alt="item.caption || project.title">
                         <span class="play-icon">▶</span>
@@ -189,11 +223,20 @@ onMounted(() => {
 
         <!-- Video Modal -->
         <Teleport to="body">
-            <div v-if="showVideoModal" class="modal-overlay" @click.self="closeVideo">
+            <div
+                v-if="showVideoModal"
+                ref="modalRef"
+                class="modal-overlay"
+                role="dialog"
+                aria-modal="true"
+                :aria-label="site.locale.value === 'es' ? 'Video de demostración' : 'Demo video'"
+                @click.self="closeVideo"
+            >
                 <div class="video-modal">
-                    <button class="modal-close" @click="closeVideo">×</button>
+                    <button class="modal-close" :aria-label="site.locale.value === 'es' ? 'Cerrar diálogo' : 'Close dialog'" @click="closeVideo">×</button>
                     <iframe
                         :src="getYouTubeEmbed(videoUrl)"
+                        :title="site.locale.value === 'es' ? 'Video de demostración' : 'Demo video'"
                         frameborder="0"
                         allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
                         allowfullscreen
