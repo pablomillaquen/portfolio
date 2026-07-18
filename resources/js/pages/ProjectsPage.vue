@@ -72,7 +72,7 @@ onMounted(loadData);
                 :to="`/projects/${project.slug}`"
                 class="project-card"
             >
-                <img :src="project.coverImageUrl" :alt="project.title">
+                <img loading="lazy" :src="project.coverImageUrl" :alt="project.title">
                 <div class="project-copy">
                     <h3>{{ project.title }}</h3>
                     <p>{{ project.summary }}</p>

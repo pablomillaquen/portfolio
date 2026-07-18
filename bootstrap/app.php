@@ -14,6 +14,7 @@ return Application::configure(basePath: dirname(__DIR__))
         $middleware->alias([
             'admin.session' => \App\Http\Middleware\EnsureAdminSession::class,
         ]);
+        $middleware->prepend([\App\Http\Middleware\CacheHeaders::class]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {
         //

@@ -1,13 +1,14 @@
 import { createRouter, createWebHistory } from 'vue-router';
 import HomePage from './pages/HomePage.vue';
-import ProjectsPage from './pages/ProjectsPage.vue';
-import ProjectDetailPage from './pages/ProjectDetailPage.vue';
-import CoursesPage from './pages/CoursesPage.vue';
-import CourseDetailPage from './pages/CourseDetailPage.vue';
-import PostsPage from './pages/PostsPage.vue';
-import PostDetailPage from './pages/PostDetailPage.vue';
-import ContactPage from './pages/ContactPage.vue';
-import AdminPage from './pages/AdminPage.vue';
+
+const ProjectsPage = () => import('./pages/ProjectsPage.vue');
+const ProjectDetailPage = () => import('./pages/ProjectDetailPage.vue');
+const CoursesPage = () => import('./pages/CoursesPage.vue');
+const CourseDetailPage = () => import('./pages/CourseDetailPage.vue');
+const PostsPage = () => import('./pages/PostsPage.vue');
+const PostDetailPage = () => import('./pages/PostDetailPage.vue');
+const ContactPage = () => import('./pages/ContactPage.vue');
+const AdminPage = () => import('./pages/AdminPage.vue');
 
 export default createRouter({
     history: createWebHistory(),

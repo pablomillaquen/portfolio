@@ -86,7 +86,7 @@ Route::get('/{any?}', function () {
         'seo' => [
             'title' => 'Pablo Millaquen — Desarrollador & Investigador',
             'description' => 'Portfolio profesional de Pablo Millaquen. Desarrollador de software e investigador especializado en logística, IA y arquitectura de software.',
-            'image' => asset('img/og_image.png'),
+            'image' => asset('img/og_image.webp'),
             'url' => url('/'),
         ],
     ]);

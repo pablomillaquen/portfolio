@@ -15,7 +15,7 @@ class SeoController extends Controller
 {
     private const SITE_NAME = 'Pablo Millaquen';
     private const SITE_URL = 'https://pablomillaquen.com';
-    private const DEFAULT_IMAGE = 'https://pablomillaquen.com/img/og_image.png';
+    private const DEFAULT_IMAGE = 'https://pablomillaquen.com/img/og_image.webp';
 
     public function home(Request $request): JsonResponse
     {

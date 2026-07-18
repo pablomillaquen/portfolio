@@ -97,7 +97,7 @@ onMounted(() => {
         </nav>
 
         <section class="panel article-card">
-            <img v-if="post.coverImageUrl" class="article-cover" :src="post.coverImageUrl" :alt="post.title">
+            <img v-if="post.coverImageUrl" loading="lazy" class="article-cover" :src="post.coverImageUrl" :alt="post.title">
             <p class="eyebrow">{{ post.publishedAt }}</p>
             <h1>{{ post.title }}</h1>
             <p v-if="post.season" class="season-badge">{{ post.season.name }} - {{ locale === 'es' ? 'Episodio' : 'Episode' }} {{ post.episodeNumber }}</p>

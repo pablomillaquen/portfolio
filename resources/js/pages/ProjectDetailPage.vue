@@ -171,6 +171,7 @@ onMounted(() => {
                 <template v-for="item in project.media" :key="item.id">
                     <img
                         v-if="item.kind === 'image'"
+                        loading="lazy"
                         :src="item.url"
                         :alt="item.caption || project.title"
                     >
@@ -179,7 +180,7 @@ onMounted(() => {
                         class="video-thumbnail"
                         @click="openVideo(item.url)"
                     >
-                        <img :src="getYouTubeThumbnail(item.url)" :alt="item.caption || project.title">
+                        <img loading="lazy" :src="getYouTubeThumbnail(item.url)" :alt="item.caption || project.title">
                         <span class="play-icon">▶</span>
                     </button>
                 </template>
