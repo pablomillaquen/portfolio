@@ -56,16 +56,12 @@ watch(isMenuOpen, (open) => {
             <div class="toolbar">
                 <button
                     class="ghost-button"
-                    :aria-label="site.locale.value === 'en'
-                        ? (site.theme.value === 'dark' ? 'Switch to light mode' : 'Switch to dark mode')
-                        : (site.theme.value === 'dark' ? 'Cambiar a modo claro' : 'Cambiar a modo oscuro')"
                     @click="site.toggleTheme"
                 >
                     {{ site.theme.value === 'dark' ? 'Light' : 'Dark' }}
                 </button>
                 <button
                     class="ghost-button"
-                    :aria-label="site.locale.value === 'en' ? 'Switch to Spanish' : 'Cambiar a inglés'"
                     @click="site.setLocale(site.locale.value === 'en' ? 'es' : 'en')"
                 >
                     {{ site.locale.value.toUpperCase() }}

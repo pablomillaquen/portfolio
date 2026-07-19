@@ -1,0 +1,10 @@
+# Pablo Millaquen — Portfolio
+
+> Portfolio profesional de Pablo Millaquen, ingeniero en informática y desarrollador full-stack.
+
+## Secciones
+
+- [Proyectos](https://pablomillaquen.com/projects): Proyectos de ingeniería de software y tecnología.
+- [Posts](https://pablomillaquen.com/posts): Artículos sobre desarrollo de software y tecnología.
+- [Cursos](https://pablomillaquen.com/courses): Cursos y formación profesional.
+- [Contacto](https://pablomillaquen.com/contact): Formulario de contacto.
