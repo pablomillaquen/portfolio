@@ -5,7 +5,7 @@ import { useFocusTrap } from '@vueuse/integrations/useFocusTrap';
 const props = defineProps({
     html: { type: String, default: '' },
     title: { type: String, default: '' },
-    locale: { type: String, default: 'en' },
+    locale: { type: String, default: 'es' },
     show: { type: Boolean, default: false },
 });
 
@@ -59,10 +59,10 @@ onUnmounted(() => {
         >
             <div class="preview-modal">
                 <div class="preview-modal-header">
-                    <h2>Preview: {{ title }}</h2>
+                    <h2>Vista previa: {{ title }}</h2>
                     <div class="preview-modal-actions">
                         <button class="ghost-button" @click="emit('toggle-locale')">
-                            {{ locale === 'en' ? 'ES' : 'EN' }}
+                            {{ locale === 'es' ? 'EN' : 'ES' }}
                         </button>
                         <button class="preview-modal-close" :aria-label="locale === 'es' ? 'Cerrar diálogo' : 'Close dialog'" @click="emit('close')">&times;</button>
                     </div>

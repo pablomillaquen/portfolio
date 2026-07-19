@@ -1,5 +1,5 @@
 <script setup>
-import { computed, inject, onMounted, ref, watch } from 'vue';
+import { computed, inject, onMounted, onUnmounted, ref, watch, nextTick } from 'vue';
 import { RouterLink, useRoute } from 'vue-router';
 import { useHead } from '@vueuse/head';
 import { api } from '../services/api';
@@ -9,6 +9,8 @@ const site = inject('site');
 const route = useRoute();
 const post = ref(null);
 const seoData = ref({});
+const tocItems = ref([]);
+const activeTocId = ref('');
 
 const locale = computed(() => site.locale.value);
 
@@ -69,20 +71,81 @@ useHead(() => {
     };
 });
 
+const extractToc = () => {
+    nextTick(() => {
+        const body = document.querySelector('.article-body');
+        if (!body) {
+            tocItems.value = [];
+            return;
+        }
+        const headings = body.querySelectorAll('h2, h3');
+        tocItems.value = Array.from(headings).map((el, i) => {
+            if (!el.id) {
+                el.id = 'toc-' + i;
+            }
+            return {
+                id: el.id,
+                text: el.textContent.trim(),
+                level: el.tagName === 'H3' ? 3 : 2,
+            };
+        });
+    });
+};
+
+const scrollToSection = (id) => {
+    const el = document.getElementById(id);
+    if (el) {
+        el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+};
+
+let observer = null;
+
+const setupObserver = () => {
+    nextTick(() => {
+        const body = document.querySelector('.article-body');
+        if (!body) return;
+        const headings = body.querySelectorAll('h2, h3');
+        if (headings.length === 0) return;
+
+        observer = new IntersectionObserver(
+            (entries) => {
+                for (const entry of entries) {
+                    if (entry.isIntersecting) {
+                        activeTocId.value = entry.target.id;
+                    }
+                }
+            },
+            { rootMargin: '-20% 0px -70% 0px' }
+        );
+
+        headings.forEach((h) => observer.observe(h));
+    });
+};
+
 const load = async () => {
     const { data } = await api.get(`/api/posts/${route.params.slug}`, {
         params: { locale: site.locale.value },
     });
     post.value = data;
+    extractToc();
+    setupObserver();
 };
 
 watch(() => [site.locale.value, route.params.slug], () => {
     load();
     loadSeo();
 });
+
 onMounted(() => {
     load();
     loadSeo();
+});
+
+onUnmounted(() => {
+    if (observer) {
+        observer.disconnect();
+    }
 });
 </script>
 
@@ -96,27 +159,76 @@ onMounted(() => {
             <span aria-current="page">{{ post.title }}</span>
         </nav>
 
-        <section class="panel article-card">
-            <img v-if="post.coverImageUrl" loading="lazy" class="article-cover" :src="post.coverImageUrl" :alt="post.title">
-            <p class="eyebrow">{{ post.publishedAt }}</p>
-            <h1>{{ post.title }}</h1>
-            <p v-if="post.season" class="season-badge">{{ post.season.name }} - {{ locale === 'es' ? 'Episodio' : 'Episode' }} {{ post.episodeNumber }}</p>
-            <p class="lead">{{ post.excerpt }}</p>
-            <div class="article-body" v-html="post.content"></div>
-            <div class="cta-row">
-                <a v-if="shareUrl" class="secondary-button" :href="shareUrl" target="_blank" rel="noreferrer">
-                    {{ locale === 'es' ? 'Compartir en LinkedIn' : 'Share on LinkedIn' }}
-                </a>
-            </div>
-        </section>
-
-        <section class="panel" v-if="post.relatedProject">
-            <h2>{{ locale === 'es' ? 'Caso de estudio relacionado' : 'Related case study' }}</h2>
-            <RouterLink :to="`/projects/${post.relatedProject.slug}`" class="project-card">
-                <div class="project-copy">
-                    <h3>{{ post.relatedProject.title }}</h3>
+        <div class="post-detail-layout">
+            <section class="panel article-card">
+                <img v-if="post.coverImageUrl" loading="lazy" class="article-cover" :src="post.coverImageUrl" :alt="post.title" width="320" height="180">
+                <h1>{{ post.title }}</h1>
+                <p class="lead">{{ post.excerpt }}</p>
+                <div class="article-body" v-html="post.content"></div>
+                <div class="cta-row">
+                    <a v-if="shareUrl" class="secondary-button" :href="shareUrl" target="_blank" rel="noreferrer">
+                        {{ locale === 'es' ? 'Compartir en LinkedIn' : 'Share on LinkedIn' }}
+                    </a>
                 </div>
-            </RouterLink>
+            </section>
+
+            <aside class="post-sidebar">
+                <div class="panel" v-if="tocItems.length > 0">
+                    <p class="sidebar-metadata meta-label">{{ locale === 'es' ? 'En este artículo' : 'In this article' }}</p>
+                    <ul class="post-toc">
+                        <li v-for="item in tocItems" :key="item.id" :class="{ 'toc-sub': item.level === 3 }">
+                            <a
+                                :href="'#' + item.id"
+                                :class="{ active: activeTocId === item.id }"
+                                @click.prevent="scrollToSection(item.id)"
+                            >{{ item.text }}</a>
+                        </li>
+                    </ul>
+                </div>
+
+                <div class="panel sidebar-metadata">
+                    <div v-if="post.publishedAt">
+                        <p class="meta-label">{{ locale === 'es' ? 'Publicado el' : 'Published on' }}</p>
+                        <p class="meta-value">{{ post.publishedAt }}</p>
+                    </div>
+                    <div v-if="post.season">
+                        <p class="meta-label">{{ locale === 'es' ? 'Temporada' : 'Season' }}</p>
+                        <p class="meta-value">{{ post.season.name }} — {{ locale === 'es' ? 'Episodio' : 'Episode' }} {{ post.episodeNumber }}</p>
+                    </div>
+                    <div v-if="shareUrl">
+                        <p class="meta-label">{{ locale === 'es' ? 'Compartir' : 'Share' }}</p>
+                        <a class="secondary-button" :href="shareUrl" target="_blank" rel="noreferrer" style="font-size:0.8rem;padding:0.5rem 1rem;">
+                            {{ locale === 'es' ? 'LinkedIn' : 'LinkedIn' }}
+                        </a>
+                    </div>
+                </div>
+
+                <div class="panel sidebar-related" v-if="post.relatedProject">
+                    <p class="meta-label">{{ locale === 'es' ? 'Caso de estudio relacionado' : 'Related case study' }}</p>
+                    <RouterLink :to="`/projects/${post.relatedProject.slug}`" class="project-card">
+                        <div class="project-copy">
+                            <h3>{{ post.relatedProject.title }}</h3>
+                        </div>
+                    </RouterLink>
+                </div>
+            </aside>
+        </div>
+
+        <section class="panel" v-if="post.relatedProjects && post.relatedProjects.length > 0">
+            <h2>{{ locale === 'es' ? 'Proyectos relacionados' : 'Related projects' }}</h2>
+            <div class="list-grid">
+                <RouterLink
+                    v-for="project in post.relatedProjects"
+                    :key="project.id"
+                    :to="`/projects/${project.slug}`"
+                    class="list-card"
+                >
+                    <div>
+                        <h3>{{ project.title }}</h3>
+                        <p>{{ project.summary }}</p>
+                    </div>
+                </RouterLink>
+            </div>
         </section>
 
         <section class="panel" v-if="post.navigation">
@@ -137,6 +249,11 @@ onMounted(() => {
                 >
                     <span class="nav-label">{{ locale === 'es' ? 'Siguiente' : 'Next' }}</span>
                     <span class="nav-title">{{ post.navigation.next.title }}</span>
+                </RouterLink>
+            </div>
+            <div class="season-discover" v-if="post.season">
+                <RouterLink :to="`/posts?season=${post.season.slug}`" class="secondary-button">
+                    {{ locale === 'es' ? 'Descubrir la temporada completa' : 'Discover the full season' }}
                 </RouterLink>
             </div>
         </section>

@@ -119,6 +119,8 @@ onMounted(loadData);
                 :src="payload.settings.home.profileImage"
                 alt=""
                 aria-hidden="true"
+                width="300"
+                height="300"
             >
         </section>
 
@@ -194,7 +196,7 @@ onMounted(loadData);
                     :to="`/projects/${project.slug}`"
                     class="project-card"
                 >
-                    <img loading="lazy" :src="project.coverImageUrl" :alt="project.title">
+                    <img loading="lazy" :src="project.coverImageUrl" :alt="project.title" width="320" height="180">
                     <div class="project-copy">
                         <h3>{{ project.title }}</h3>
                         <p>{{ project.summary }}</p>

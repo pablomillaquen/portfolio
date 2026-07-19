@@ -11,7 +11,7 @@ class AdminSeasonController extends Controller
 {
     public function index(): JsonResponse
     {
-        $seasons = Season::orderBy('sort_order')->get();
+        $seasons = Season::with('categories')->orderBy('sort_order')->get();
 
         return response()->json(['data' => $seasons]);
     }
@@ -29,8 +29,9 @@ class AdminSeasonController extends Controller
         ]);
 
         $season = Season::create($validated);
+        $season->categories()->sync($request->input('categories', []));
 
-        return response()->json(['data' => $season], 201);
+        return response()->json(['data' => $season->load('categories')], 201);
     }
 
     public function update(Request $request, int $id): JsonResponse
@@ -48,8 +49,9 @@ class AdminSeasonController extends Controller
         ]);
 
         $season->update($validated);
+        $season->categories()->sync($request->input('categories', []));
 
-        return response()->json(['data' => $season]);
+        return response()->json(['data' => $season->load('categories')]);
     }
 
     public function destroy(int $id): JsonResponse

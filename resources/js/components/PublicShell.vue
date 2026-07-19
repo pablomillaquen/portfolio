@@ -1,9 +1,12 @@
 <script setup>
-import { computed, inject } from 'vue';
+import { computed, inject, ref, watch } from 'vue';
 import { RouterLink, useRoute } from 'vue-router';
+import MobileNavDrawer from './MobileNavDrawer.vue';
 
 const site = inject('site');
 const route = useRoute();
+
+const isMenuOpen = ref(false);
 
 const brand = computed(() => site.settings.value?.home?.brand || 'PM');
 const footerText = computed(() => site.settings.value?.footer?.copyright || 'All rights reserved.');
@@ -15,6 +18,22 @@ const links = [
     { to: '/courses', label: { es: 'Cursos', en: 'Courses' } },
     { to: '/contact', label: { es: 'Contacto', en: 'Contact' } },
 ];
+
+function toggleMenu() {
+    isMenuOpen.value = !isMenuOpen.value;
+}
+
+function closeMenu() {
+    isMenuOpen.value = false;
+}
+
+watch(isMenuOpen, (open) => {
+    if (open) {
+        document.body.classList.add('menu-open');
+    } else {
+        document.body.classList.remove('menu-open');
+    }
+});
 </script>
 
 <template>
@@ -53,7 +72,21 @@ const links = [
                 </button>
                 <RouterLink class="ghost-button" to="/admin">Admin</RouterLink>
             </div>
+            <button
+                class="hamburger-btn"
+                :aria-label="site.locale.value === 'en' ? 'Open menu' : 'Abrir menú'"
+                :aria-expanded="isMenuOpen"
+                @click="toggleMenu"
+            >
+                <span class="hamburger-icon" :class="{ 'is-open': isMenuOpen }">
+                    <span></span>
+                    <span></span>
+                    <span></span>
+                </span>
+            </button>
         </header>
+
+        <MobileNavDrawer :is-open="isMenuOpen" @close="closeMenu" />
 
         <main id="main-content" tabindex="-1" class="page-frame">
             <slot />

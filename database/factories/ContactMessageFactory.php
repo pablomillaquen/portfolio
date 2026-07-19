@@ -1,0 +1,25 @@
+<?php
+
+namespace Database\Factories;
+
+use Illuminate\Database\Eloquent\Factories\Factory;
+use App\Models\ContactMessage;
+
+class ContactMessageFactory extends Factory
+{
+    protected $model = ContactMessage::class;
+
+    public function definition(): array
+    {
+        return [
+            'name' => $this->faker->name(),
+            'email' => $this->faker->safeEmail(),
+            'message' => $this->faker->paragraph(),
+        ];
+    }
+
+    public function read(): static
+    {
+        return $this->state(fn () => ['message' => $this->faker->paragraph()]);
+    }
+}

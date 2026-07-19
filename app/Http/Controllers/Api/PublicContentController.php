@@ -74,7 +74,7 @@ class PublicContentController extends Controller
     public function project(Request $request, string $slug): JsonResponse
     {
         $locale = $request->string('locale', 'en')->toString();
-        $project = Project::query()->where('status', 'published')->with('media')->where('slug', $slug)->firstOrFail();
+        $project = Project::query()->where('status', 'published')->with(['media', 'posts.season'])->where('slug', $slug)->firstOrFail();
 
         return response()->json($this->projectPayload($project, $locale, true));
     }
@@ -103,7 +103,7 @@ class PublicContentController extends Controller
     public function post(Request $request, string $slug): JsonResponse
     {
         $locale = $request->string('locale', 'en')->toString();
-        $post = Post::query()->where('status', 'published')->where('slug', $slug)->firstOrFail();
+        $post = Post::query()->where('status', 'published')->where('slug', $slug)->with('projects')->firstOrFail();
 
         return response()->json($this->postPayload($post, $locale, true));
     }
@@ -264,16 +264,28 @@ class PublicContentController extends Controller
                 'name' => TranslatableContent::text($capability->name, $locale),
             ])->all();
 
-            $payload['relatedPosts'] = $project->posts->map(fn ($post) => [
-                'id' => $post->id,
-                'slug' => $post->slug,
-                'title' => TranslatableContent::text($post->title, $locale),
-                'season' => $post->season ? [
-                    'slug' => $post->season->slug,
-                    'name' => TranslatableContent::text($post->season->name, $locale),
-                ] : null,
-                'episodeNumber' => $post->episode_number,
-            ])->all();
+            $postsBySeason = $project->posts
+                ->sortBy('episode_number')
+                ->groupBy(fn ($post) => $post->season_id ?? 'none')
+                ->map(function ($posts, $seasonId) use ($locale) {
+                    $season = $posts->first()->season;
+                    return [
+                        'season' => $season ? [
+                            'slug' => $season->slug,
+                            'name' => TranslatableContent::text($season->name, $locale),
+                        ] : null,
+                        'posts' => $posts->map(fn ($post) => [
+                            'id' => $post->id,
+                            'slug' => $post->slug,
+                            'title' => TranslatableContent::text($post->title, $locale),
+                            'episodeNumber' => $post->episode_number,
+                        ])->values()->all(),
+                    ];
+                })
+                ->values()
+                ->all();
+
+            $payload['relatedPostsBySeason'] = $postsBySeason;
         }
 
         return $payload;
@@ -312,6 +324,15 @@ class PublicContentController extends Controller
                     'slug' => $post->relatedProject->slug,
                     'title' => TranslatableContent::text($post->relatedProject->title, $locale),
                 ];
+            }
+
+            if ($post->projects->isNotEmpty()) {
+                $payload['relatedProjects'] = $post->projects->map(fn ($project) => [
+                    'id' => $project->id,
+                    'slug' => $project->slug,
+                    'title' => TranslatableContent::text($project->title, $locale),
+                    'summary' => TranslatableContent::text($project->summary, $locale),
+                ])->all();
             }
 
             if ($post->season_id && $post->episode_number !== null) {

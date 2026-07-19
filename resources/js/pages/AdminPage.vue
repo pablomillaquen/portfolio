@@ -5,6 +5,16 @@ import ContentPreviewModal from '../components/ContentPreviewModal.vue';
 
 const site = inject('site');
 const tab = ref('projects');
+const tabItems = [
+    { key: 'projects', label: 'Proyectos' },
+    { key: 'posts', label: 'Publicaciones' },
+    { key: 'seasons', label: 'Temporadas' },
+    { key: 'categories', label: 'Categorías' },
+    { key: 'capabilities', label: 'Capacidades' },
+    { key: 'courses', label: 'Cursos' },
+    { key: 'settings', label: 'Configuración' },
+    { key: 'social', label: 'Redes sociales' },
+];
 const projectSectionTab = ref('list');
 const postSectionTab = ref('list');
 const seasonSectionTab = ref('list');
@@ -20,6 +30,69 @@ const categories = ref([]);
 const capabilities = ref([]);
 const socialLinks = ref({});
 const settings = ref({});
+
+const postsBySeason = computed(() => {
+    const withSeason = [];
+    const noSeason = [];
+
+    for (const post of posts.value) {
+        if (post.season) {
+            withSeason.push(post);
+        } else {
+            noSeason.push(post);
+        }
+    }
+
+    const grouped = {};
+    for (const post of withSeason) {
+        const key = post.season.id;
+        if (!grouped[key]) {
+            grouped[key] = {
+                season: post.season,
+                posts: [],
+            };
+        }
+        grouped[key].posts.push(post);
+    }
+
+    const result = Object.values(grouped).sort((a, b) => {
+        const orderA = a.season.sort_order ?? 0;
+        const orderB = b.season.sort_order ?? 0;
+        return orderA - orderB;
+    });
+
+    for (const group of result) {
+        group.posts.sort((a, b) => (a.episode_number ?? 0) - (b.episode_number ?? 0));
+    }
+
+    noSeason.sort((a, b) => b.id - a.id);
+
+    return { groups: result, ungrouped: noSeason };
+});
+
+const categoriesByDimension = computed(() => {
+    const dimensionLabels = {
+        domain: 'Dominio',
+        capability: 'Capacidad',
+        technology: 'Tecnología',
+        methodology: 'Metodología',
+    };
+
+    const grouped = {};
+    for (const cat of categories.value) {
+        const dim = cat.dimension || 'other';
+        if (!grouped[dim]) {
+            grouped[dim] = {
+                label: dimensionLabels[dim] || dim,
+                items: [],
+            };
+        }
+        grouped[dim].items.push(cat);
+    }
+
+    const order = ['domain', 'capability', 'technology', 'methodology', 'other'];
+    return order.filter(k => grouped[k]).map(k => grouped[k]);
+});
 const credentials = reactive({
     email: '',
     password: '',
@@ -27,7 +100,7 @@ const credentials = reactive({
 
 const showPreviewModal = ref(false);
 const previewType = ref('project');
-const previewLocale = ref('en');
+const previewLocale = ref('es');
 const previewHtml = ref('');
 const previewTitle = ref('');
 
@@ -54,6 +127,7 @@ const blankProject = () => ({
     published_at: '',
     categories: [],
     capabilities: [],
+    posts: [],
 });
 
 const blankPost = () => ({
@@ -93,6 +167,7 @@ const blankSeason = () => ({
     sort_order: 0,
     name: { es: '', en: '' },
     description: { es: '', en: '' },
+    categories: [],
 });
 
 const blankCategory = () => ({
@@ -121,6 +196,18 @@ const stackJson = ref('[]');
 const experienceJson = ref('[]');
 
 const isAdmin = computed(() => Boolean(site.authUser.value?.is_admin));
+
+const formatDatetimeLocal = (value) => {
+    if (!value) return '';
+    const d = new Date(value);
+    if (isNaN(d.getTime())) return '';
+    const yyyy = d.getFullYear();
+    const mm = String(d.getMonth() + 1).padStart(2, '0');
+    const dd = String(d.getDate()).padStart(2, '0');
+    const hh = String(d.getHours()).padStart(2, '0');
+    const mi = String(d.getMinutes()).padStart(2, '0');
+    return `${yyyy}-${mm}-${dd}T${hh}:${mi}`;
+};
 
 const resetProjectForm = () => {
     Object.assign(projectForm, blankProject());
@@ -161,6 +248,8 @@ const fillProject = (project) => {
     data.media = data.media || [];
     data.categories = (data.categories || []).map(c => typeof c === 'object' ? c.id : c);
     data.capabilities = (data.capabilities || []).map(c => typeof c === 'object' ? c.id : c);
+    data.posts = (data.posts || []).map(p => typeof p === 'object' ? p.id : p);
+    data.published_at = formatDatetimeLocal(data.published_at);
     Object.assign(projectForm, data);
     projectForm.stackInput = (project.stack || []).join(', ');
     projectSectionTab.value = 'form';
@@ -171,6 +260,7 @@ const fillPost = (post) => {
     data.title = data.title || { es: '', en: '' };
     data.excerpt = data.excerpt || { es: '', en: '' };
     data.content = data.content || { es: '', en: '' };
+    data.published_at = formatDatetimeLocal(data.published_at);
     Object.assign(postForm, data);
     postSectionTab.value = 'form';
 };
@@ -186,6 +276,7 @@ const fillSeason = (season) => {
     const data = JSON.parse(JSON.stringify(season));
     data.name = data.name || { es: '', en: '' };
     data.description = data.description || { es: '', en: '' };
+    data.categories = (data.categories || []).map(c => typeof c === 'object' ? c.id : c);
     Object.assign(seasonForm, data);
     seasonSectionTab.value = 'form';
 };
@@ -238,7 +329,7 @@ const login = async () => {
         await site.refreshAuth();
         await loadAdminData();
     } catch {
-        error.value = 'Could not sign in.';
+        error.value = 'No se pudo iniciar sesión.';
     }
 };
 
@@ -260,7 +351,7 @@ const saveProject = async () => {
     }
 
     await loadAdminData();
-    message.value = 'Project saved.';
+    message.value = 'Proyecto guardado.';
     projectSectionTab.value = 'form';
 };
 
@@ -277,7 +368,7 @@ const savePost = async () => {
     }
 
     await loadAdminData();
-    message.value = 'Post saved.';
+    message.value = 'Publicación guardada.';
     postSectionTab.value = 'form';
 };
 
@@ -295,7 +386,7 @@ const saveCourse = async () => {
 
     resetCourseForm();
     await loadAdminData();
-    message.value = 'Course saved.';
+    message.value = 'Curso guardado.';
 };
 
 const deleteCourse = async (id) => {
@@ -311,7 +402,7 @@ const saveSeason = async () => {
     }
 
     await loadAdminData();
-    message.value = 'Season saved.';
+    message.value = 'Temporada guardada.';
     seasonSectionTab.value = 'form';
 };
 
@@ -328,7 +419,7 @@ const saveCategory = async () => {
     }
 
     await loadAdminData();
-    message.value = 'Category saved.';
+    message.value = 'Categoría guardada.';
     categorySectionTab.value = 'form';
 };
 
@@ -345,7 +436,7 @@ const saveCapability = async () => {
     }
 
     await loadAdminData();
-    message.value = 'Capability saved.';
+    message.value = 'Capacidad guardada.';
     capabilitySectionTab.value = 'form';
 };
 
@@ -357,7 +448,7 @@ const deleteCapability = async (id) => {
 const saveSocialLinks = async () => {
     await api.put('/api/admin/social-links', { links: socialLinks.value });
     await loadAdminData();
-    message.value = 'Social links updated.';
+    message.value = 'Redes sociales actualizadas.';
 };
 
 const saveSettings = async () => {
@@ -371,9 +462,9 @@ const saveSettings = async () => {
         await api.put('/api/admin/settings', { settings: payload });
         await loadAdminData();
         await site.loadShell();
-        message.value = 'Settings updated.';
+        message.value = 'Configuración guardada.';
     } catch {
-        error.value = 'Stack or experience JSON is invalid.';
+        error.value = 'El JSON de stack o experiencia no es válido.';
     }
 };
 
@@ -384,25 +475,25 @@ const addSocial = () => socialLinks.value.push({ platform: '', label: { es: '', 
 const openPreview = async (type) => {
     const formData = type === 'project' ? projectForm : postForm;
     previewType.value = type;
-    previewLocale.value = 'en';
-    previewTitle.value = formData.title?.en || formData.title?.es || '';
+    previewLocale.value = 'es';
+    previewTitle.value = formData.title?.es || formData.title?.en || '';
 
     try {
         const { data } = await api.post('/api/admin/preview', {
             type,
-            locale: 'en',
+            locale: 'es',
             data: JSON.parse(JSON.stringify(formData)),
         });
         previewHtml.value = data.html;
         previewTitle.value = data.title;
         showPreviewModal.value = true;
     } catch {
-        error.value = 'Failed to load preview.';
+        error.value = 'Error al cargar la vista previa.';
     }
 };
 
 const togglePreviewLocale = async () => {
-    const newLocale = previewLocale.value === 'en' ? 'es' : 'en';
+    const newLocale = previewLocale.value === 'es' ? 'en' : 'es';
     const formData = previewType.value === 'project' ? projectForm : postForm;
     previewLocale.value = newLocale;
 
@@ -416,7 +507,7 @@ const togglePreviewLocale = async () => {
         previewTitle.value = data.title;
     } catch (e) {
         console.error('[Preview] Failed to toggle locale:', e?.response?.data ?? e);
-        error.value = 'Failed to load preview.';
+        error.value = 'Error al cargar la vista previa.';
     }
 };
 
@@ -455,13 +546,13 @@ onMounted(async () => {
                 </div>
                 <div class="toolbar">
                     <a class="secondary-button" href="/" target="_blank" rel="noreferrer">Open site</a>
-                    <button class="ghost-button" @click="logout">Logout</button>
+                    <button class="ghost-button" @click="logout">Cerrar sesión</button>
                 </div>
             </header>
 
             <div class="admin-tabs">
-                <button v-for="item in ['projects', 'posts', 'seasons', 'categories', 'capabilities', 'courses', 'settings', 'social']" :key="item" :class="{ active: tab === item }" @click="tab = item">
-                    {{ item }}
+                <button v-for="item in tabItems" :key="item.key" :class="{ active: tab === item.key }" @click="tab = item.key">
+                    {{ item.label }}
                 </button>
             </div>
 
@@ -471,47 +562,49 @@ onMounted(async () => {
             <section v-if="tab === 'projects'">
                 <div v-if="projectSectionTab === 'list'" class="panel">
                     <div class="section-heading">
-                        <h2>Projects</h2>
-                        <button class="ghost-button" @click="resetProjectForm">New</button>
+                        <h2>Proyectos</h2>
+                        <button class="ghost-button" @click="resetProjectForm">Nuevo</button>
                     </div>
                     <div class="admin-list">
                         <button v-for="project in projects" :key="project.id" class="admin-list-item" @click="fillProject(project)">
                             <span class="star-indicator" :class="{ 'is-featured': project.featured }">★</span>
-                            <strong>{{ project.title.en }}</strong>
-                            <span>{{ project.status }}</span>
+                            <div class="admin-list-content">
+                                <strong>{{ project.title.es || project.title.en }}</strong>
+                            </div>
+                            <span class="admin-list-status">{{ project.status }}</span>
                         </button>
                     </div>
                 </div>
                 <form v-if="projectSectionTab === 'form'" class="panel editor-form" @submit.prevent="saveProject">
                     <div class="section-heading">
-                        <button class="ghost-button" type="button" @click="projectSectionTab = 'list'">← Back</button>
-                        <h2>{{ projectForm.id ? 'Edit project' : 'New project' }}</h2>
+                        <button class="ghost-button" type="button" @click="projectSectionTab = 'list'">← Volver</button>
+                        <h2>{{ projectForm.id ? 'Editar proyecto' : 'Nuevo proyecto' }}</h2>
                     </div>
                     <div class="two-column">
-                        <input v-model="projectForm.title.es" placeholder="Titulo ES">
+                        <input v-model="projectForm.title.es" placeholder="Título ES">
                         <input v-model="projectForm.title.en" placeholder="Title EN">
                         <input v-model="projectForm.slug" placeholder="Slug">
-                        <input v-model="projectForm.cover_image_url" placeholder="Cover image URL">
-                        <input v-model="projectForm.demo_url" placeholder="Demo URL">
-                        <input v-model="projectForm.repository_url" placeholder="Repository URL">
+                        <input v-model="projectForm.cover_image_url" placeholder="URL imagen de portada">
+                        <input v-model="projectForm.demo_url" placeholder="URL demo">
+                        <input v-model="projectForm.repository_url" placeholder="URL repositorio">
                         <input v-model="projectForm.published_at" type="datetime-local">
-                        <input v-model="projectForm.stackInput" placeholder="Stack separated by commas">
+                        <input v-model="projectForm.stackInput" placeholder="Stack separado por comas">
                     </div>
                     <div class="two-column">
                         <textarea v-model="projectForm.summary.es" rows="3" placeholder="Resumen ES" />
                         <textarea v-model="projectForm.summary.en" rows="3" placeholder="Summary EN" />
-                        <textarea v-model="projectForm.description.es" rows="5" placeholder="Descripcion ES" />
+                        <textarea v-model="projectForm.description.es" rows="5" placeholder="Descripción ES" />
                         <textarea v-model="projectForm.description.en" rows="5" placeholder="Description EN" />
                     </div>
                     <div class="editor-toggles">
-                        <label><input v-model="projectForm.featured" type="checkbox"> Featured</label>
+                        <label><input v-model="projectForm.featured" type="checkbox"> Destacado</label>
                         <select v-model="projectForm.status">
-                            <option value="draft">Draft</option>
-                            <option value="published">Published</option>
+                            <option value="draft">Borrador</option>
+                            <option value="published">Publicado</option>
                         </select>
                     </div>
                     <div class="sub-editor">
-                        <h3>Case Study</h3>
+                        <h3>Caso de estudio</h3>
                         <div class="two-column">
                             <textarea v-model="projectForm.problem.es" rows="3" placeholder="Problema ES" />
                             <textarea v-model="projectForm.problem.en" rows="3" placeholder="Problem EN" />
@@ -531,53 +624,74 @@ onMounted(async () => {
                     </div>
                     <div class="sub-editor">
                         <div class="section-heading">
-                            <h3>Details</h3>
-                            <button class="ghost-button" type="button" @click="addDetail">Add</button>
+                            <h3>Detalles</h3>
+                            <button class="ghost-button" type="button" @click="addDetail">Agregar</button>
                         </div>
                         <div v-for="(detail, index) in projectForm.details" :key="index" class="repeat-row">
-                            <input v-model="detail.label.es" placeholder="Label ES">
+                            <input v-model="detail.label.es" placeholder="Etiqueta ES">
                             <input v-model="detail.label.en" placeholder="Label EN">
-                            <input v-model="detail.value.es" placeholder="Value ES">
+                            <input v-model="detail.value.es" placeholder="Valor ES">
                             <input v-model="detail.value.en" placeholder="Value EN">
                         </div>
                     </div>
                     <div class="sub-editor">
                         <div class="section-heading">
-                            <h3>Media</h3>
-                            <button class="ghost-button" type="button" @click="addMedia">Add</button>
+                            <h3>Medios</h3>
+                            <button class="ghost-button" type="button" @click="addMedia">Agregar</button>
                         </div>
                         <div v-for="(item, index) in projectForm.media" :key="index" class="repeat-row">
                             <select v-model="item.kind">
-                                <option value="image">Image</option>
+                                <option value="image">Imagen</option>
                                 <option value="video">Video</option>
                             </select>
-                            <input v-model="item.url" placeholder="Media URL">
-                            <input v-model="item.caption.es" placeholder="Caption ES">
+                            <input v-model="item.url" placeholder="URL del medio">
+                            <input v-model="item.caption.es" placeholder="Pie ES">
                             <input v-model="item.caption.en" placeholder="Caption EN">
                         </div>
                     </div>
                     <div class="sub-editor">
-                        <h3>Categories</h3>
+                        <h3>Categorías</h3>
                         <div class="checkbox-grid">
                             <label v-for="cat in categories" :key="cat.id">
                                 <input type="checkbox" :value="cat.id" v-model="projectForm.categories">
-                                {{ cat.name?.en || cat.slug }}
+                                {{ cat.name?.es || cat.name?.en || cat.slug }}
                             </label>
                         </div>
                     </div>
                     <div class="sub-editor">
-                        <h3>Capabilities</h3>
+                        <h3>Capacidades</h3>
                         <div class="checkbox-grid">
                             <label v-for="cap in capabilities" :key="cap.id">
                                 <input type="checkbox" :value="cap.id" v-model="projectForm.capabilities">
-                                {{ cap.name?.en || cap.slug }}
+                                {{ cap.name?.es || cap.name?.en || cap.slug }}
                             </label>
                         </div>
                     </div>
+                    <div class="sub-editor">
+                        <h3>Publicaciones relacionadas</h3>
+                        <div v-for="group in postsBySeason.groups" :key="group.season.id" class="post-group">
+                            <p class="post-group-label">{{ group.season.name?.es || group.season.name?.en || group.season.slug }}</p>
+                            <div class="checkbox-grid">
+                                <label v-for="post in group.posts" :key="post.id">
+                                    <input type="checkbox" :value="post.id" v-model="projectForm.posts">
+                                    #{{ post.episode_number }} — {{ post.title?.es || post.title?.en || post.slug }}
+                                </label>
+                            </div>
+                        </div>
+                        <div v-if="postsBySeason.ungrouped.length > 0" class="post-group">
+                            <p class="post-group-label">Sin temporada</p>
+                            <div class="checkbox-grid">
+                                <label v-for="post in postsBySeason.ungrouped" :key="post.id">
+                                    <input type="checkbox" :value="post.id" v-model="projectForm.posts">
+                                    {{ post.title?.es || post.title?.en || post.slug }}
+                                </label>
+                            </div>
+                        </div>
+                    </div>
                     <div class="cta-row">
-                        <button class="primary-button" type="submit">Save project</button>
-                        <button class="secondary-button" type="button" @click="openPreview('project')">Preview</button>
-                        <button v-if="projectForm.id" class="danger-button" type="button" @click="deleteProject(projectForm.id)">Delete</button>
+                        <button class="primary-button" type="submit">Guardar proyecto</button>
+                        <button class="secondary-button" type="button" @click="openPreview('project')">Vista previa</button>
+                        <button v-if="projectForm.id" class="danger-button" type="button" @click="deleteProject(projectForm.id)">Eliminar</button>
                     </div>
                 </form>
             </section>
@@ -585,49 +699,54 @@ onMounted(async () => {
             <section v-if="tab === 'posts'">
                 <div v-if="postSectionTab === 'list'" class="panel">
                     <div class="section-heading">
-                        <h2>Posts</h2>
-                        <button class="ghost-button" @click="resetPostForm">New</button>
+                        <h2>Publicaciones</h2>
+                        <button class="ghost-button" @click="resetPostForm">Nueva</button>
                     </div>
                     <div class="admin-list">
                         <button v-for="post in posts" :key="post.id" class="admin-list-item" @click="fillPost(post)">
                             <span class="star-indicator" :class="{ 'is-featured': post.featured }">★</span>
-                            <strong>{{ post.title.en }}</strong>
-                            <span>{{ post.type }}</span>
-                            <span v-if="post.season" class="season-badge">{{ post.season.name?.en || post.season.slug }} #{{ post.episode_number }}</span>
+                            <div class="admin-list-content">
+                                <strong>{{ post.title.es || post.title.en }}</strong>
+                                <span v-if="post.season" class="admin-list-season">{{ post.season.name?.es || post.season.name?.en || post.season.slug }} #{{ post.episode_number }}</span>
+                            </div>
+                            <div class="admin-list-meta">
+                                <span class="admin-list-type">{{ post.type }}</span>
+                                <span class="admin-list-status">{{ post.status }}</span>
+                            </div>
                         </button>
                     </div>
                 </div>
                 <form v-if="postSectionTab === 'form'" class="panel editor-form" @submit.prevent="savePost">
                     <div class="section-heading">
-                        <button class="ghost-button" type="button" @click="postSectionTab = 'list'">← Back</button>
-                        <h2>{{ postForm.id ? 'Edit post' : 'New post' }}</h2>
+                        <button class="ghost-button" type="button" @click="postSectionTab = 'list'">← Volver</button>
+                        <h2>{{ postForm.id ? 'Editar publicación' : 'Nueva publicación' }}</h2>
                     </div>
                     <div class="two-column">
-                        <input v-model="postForm.title.es" placeholder="Titulo ES">
+                        <input v-model="postForm.title.es" placeholder="Título ES">
                         <input v-model="postForm.title.en" placeholder="Title EN">
                         <input v-model="postForm.slug" placeholder="Slug">
-                        <input v-model="postForm.cover_image_url" placeholder="Cover image URL">
-                        <input v-model="postForm.external_url" placeholder="External URL">
+                        <input v-model="postForm.cover_image_url" placeholder="URL imagen de portada">
+                        <input v-model="postForm.external_url" placeholder="URL externa">
                         <input v-model="postForm.published_at" type="datetime-local">
                     </div>
                     <div class="editor-toggles">
                         <select v-model="postForm.type">
-                            <option value="internal">Internal</option>
-                            <option value="external">External</option>
+                            <option value="internal">Interna</option>
+                            <option value="external">Externa</option>
                         </select>
                         <select v-model="postForm.status">
-                            <option value="draft">Draft</option>
-                            <option value="published">Published</option>
+                            <option value="draft">Borrador</option>
+                            <option value="published">Publicado</option>
                         </select>
-                        <label><input v-model="postForm.featured" type="checkbox"> Featured</label>
-                        <label><input v-model="postForm.share_enabled" type="checkbox"> Share enabled</label>
+                        <label><input v-model="postForm.featured" type="checkbox"> Destacada</label>
+                        <label><input v-model="postForm.share_enabled" type="checkbox"> Compartir habilitado</label>
                     </div>
                     <div class="two-column">
                         <select v-model="postForm.season_id">
                             <option :value="null">Sin temporada</option>
-                            <option v-for="season in seasons" :key="season.id" :value="season.id">{{ season.name?.en || season.slug }}</option>
+                            <option v-for="season in seasons" :key="season.id" :value="season.id">{{ season.name?.es || season.name?.en || season.slug }}</option>
                         </select>
-                        <input v-model.number="postForm.episode_number" type="number" min="1" placeholder="Episode number">
+                        <input v-model.number="postForm.episode_number" type="number" min="1" placeholder="Número de episodio">
                     </div>
                     <div class="two-column">
                         <textarea v-model="postForm.excerpt.es" rows="3" placeholder="Extracto ES" />
@@ -636,9 +755,9 @@ onMounted(async () => {
                         <textarea v-model="postForm.content.en" rows="8" placeholder="Content EN" />
                     </div>
                     <div class="cta-row">
-                        <button class="primary-button" type="submit">Save post</button>
-                        <button class="secondary-button" type="button" @click="openPreview('post')">Preview</button>
-                        <button v-if="postForm.id" class="danger-button" type="button" @click="deletePost(postForm.id)">Delete</button>
+                        <button class="primary-button" type="submit">Guardar publicación</button>
+                        <button class="secondary-button" type="button" @click="openPreview('post')">Vista previa</button>
+                        <button v-if="postForm.id" class="danger-button" type="button" @click="deletePost(postForm.id)">Eliminar</button>
                     </div>
                 </form>
             </section>
@@ -646,42 +765,56 @@ onMounted(async () => {
             <section v-if="tab === 'seasons'">
                 <div v-if="seasonSectionTab === 'list'" class="panel">
                     <div class="section-heading">
-                        <h2>Seasons</h2>
-                        <button class="ghost-button" @click="resetSeasonForm">New</button>
+                        <h2>Temporadas</h2>
+                        <button class="ghost-button" @click="resetSeasonForm">Nueva</button>
                     </div>
                     <div class="admin-list">
                         <button v-for="season in seasons" :key="season.id" class="admin-list-item" @click="fillSeason(season)">
-                            <strong>{{ season.name?.en || season.slug }}</strong>
-                            <span>{{ season.status }}</span>
+                            <div class="admin-list-content">
+                                <strong>{{ season.name?.es || season.name?.en || season.slug }}</strong>
+                            </div>
+                            <span class="admin-list-status">{{ season.status }}</span>
                         </button>
                     </div>
                 </div>
                 <form v-if="seasonSectionTab === 'form'" class="panel editor-form" @submit.prevent="saveSeason">
                     <div class="section-heading">
-                        <button class="ghost-button" type="button" @click="seasonSectionTab = 'list'">← Back</button>
-                        <h2>{{ seasonForm.id ? 'Edit season' : 'New season' }}</h2>
+                        <button class="ghost-button" type="button" @click="seasonSectionTab = 'list'">← Volver</button>
+                        <h2>{{ seasonForm.id ? 'Editar temporada' : 'Nueva temporada' }}</h2>
                     </div>
                     <div class="two-column">
                         <input v-model="seasonForm.name.es" placeholder="Nombre ES">
                         <input v-model="seasonForm.name.en" placeholder="Name EN">
                         <input v-model="seasonForm.slug" placeholder="Slug">
-                        <input v-model.number="seasonForm.sort_order" type="number" min="0" placeholder="Sort order">
+                        <input v-model.number="seasonForm.sort_order" type="number" min="0" placeholder="Orden">
                     </div>
                     <div class="editor-toggles">
                         <select v-model="seasonForm.status">
-                            <option value="draft">Draft</option>
-                            <option value="upcoming">Upcoming</option>
-                            <option value="active">Active</option>
-                            <option value="completed">Completed</option>
+                            <option value="draft">Borrador</option>
+                            <option value="upcoming">Próximamente</option>
+                            <option value="active">Activa</option>
+                            <option value="completed">Completada</option>
                         </select>
                     </div>
                     <div class="two-column">
-                        <textarea v-model="seasonForm.description.es" rows="3" placeholder="Descripcion ES" />
+                        <textarea v-model="seasonForm.description.es" rows="3" placeholder="Descripción ES" />
                         <textarea v-model="seasonForm.description.en" rows="3" placeholder="Description EN" />
                     </div>
+                    <div class="sub-editor">
+                        <h3>Categorías</h3>
+                        <div v-for="group in categoriesByDimension" :key="group.label" class="post-group">
+                            <p class="post-group-label">{{ group.label }}</p>
+                            <div class="checkbox-grid">
+                                <label v-for="cat in group.items" :key="cat.id">
+                                    <input type="checkbox" :value="cat.id" v-model="seasonForm.categories">
+                                    {{ cat.name?.es || cat.name?.en || cat.slug }}
+                                </label>
+                            </div>
+                        </div>
+                    </div>
                     <div class="cta-row">
-                        <button class="primary-button" type="submit">Save season</button>
-                        <button v-if="seasonForm.id" class="danger-button" type="button" @click="deleteSeason(seasonForm.id)">Delete</button>
+                        <button class="primary-button" type="submit">Guardar temporada</button>
+                        <button v-if="seasonForm.id" class="danger-button" type="button" @click="deleteSeason(seasonForm.id)">Eliminar</button>
                     </div>
                 </form>
             </section>
@@ -689,39 +822,41 @@ onMounted(async () => {
             <section v-if="tab === 'categories'">
                 <div v-if="categorySectionTab === 'list'" class="panel">
                     <div class="section-heading">
-                        <h2>Categories</h2>
-                        <button class="ghost-button" @click="resetCategoryForm">New</button>
+                        <h2>Categorías</h2>
+                        <button class="ghost-button" @click="resetCategoryForm">Nueva</button>
                     </div>
                     <div class="admin-list">
                         <button v-for="category in categories" :key="category.id" class="admin-list-item" @click="fillCategory(category)">
-                            <strong>{{ category.name?.en || category.slug }}</strong>
-                            <span>{{ category.dimension }}</span>
+                            <div class="admin-list-content">
+                                <strong>{{ category.name?.es || category.name?.en || category.slug }}</strong>
+                            </div>
+                            <span class="admin-list-status">{{ category.dimension }}</span>
                         </button>
                     </div>
                 </div>
                 <form v-if="categorySectionTab === 'form'" class="panel editor-form" @submit.prevent="saveCategory">
                     <div class="section-heading">
-                        <button class="ghost-button" type="button" @click="categorySectionTab = 'list'">← Back</button>
-                        <h2>{{ categoryForm.id ? 'Edit category' : 'New category' }}</h2>
+                        <button class="ghost-button" type="button" @click="categorySectionTab = 'list'">← Volver</button>
+                        <h2>{{ categoryForm.id ? 'Editar categoría' : 'Nueva categoría' }}</h2>
                     </div>
                     <div class="two-column">
                         <input v-model="categoryForm.name.es" placeholder="Nombre ES">
                         <input v-model="categoryForm.name.en" placeholder="Name EN">
                         <input v-model="categoryForm.slug" placeholder="Slug">
                         <select v-model="categoryForm.dimension">
-                            <option value="domain">Domain</option>
-                            <option value="capability">Capability</option>
-                            <option value="technology">Technology</option>
-                            <option value="methodology">Methodology</option>
+                            <option value="domain">Dominio</option>
+                            <option value="capability">Capacidad</option>
+                            <option value="technology">Tecnología</option>
+                            <option value="methodology">Metodología</option>
                         </select>
                     </div>
                     <div class="two-column">
-                        <textarea v-model="categoryForm.description.es" rows="3" placeholder="Descripcion ES" />
+                        <textarea v-model="categoryForm.description.es" rows="3" placeholder="Descripción ES" />
                         <textarea v-model="categoryForm.description.en" rows="3" placeholder="Description EN" />
                     </div>
                     <div class="cta-row">
-                        <button class="primary-button" type="submit">Save category</button>
-                        <button v-if="categoryForm.id" class="danger-button" type="button" @click="deleteCategory(categoryForm.id)">Delete</button>
+                        <button class="primary-button" type="submit">Guardar categoría</button>
+                        <button v-if="categoryForm.id" class="danger-button" type="button" @click="deleteCategory(categoryForm.id)">Eliminar</button>
                     </div>
                 </form>
             </section>
@@ -729,33 +864,33 @@ onMounted(async () => {
             <section v-if="tab === 'capabilities'">
                 <div v-if="capabilitySectionTab === 'list'" class="panel">
                     <div class="section-heading">
-                        <h2>Capabilities</h2>
-                        <button class="ghost-button" @click="resetCapabilityForm">New</button>
+                        <h2>Capacidades</h2>
+                        <button class="ghost-button" @click="resetCapabilityForm">Nueva</button>
                     </div>
                     <div class="admin-list">
                         <button v-for="capability in capabilities" :key="capability.id" class="admin-list-item" @click="fillCapability(capability)">
-                            <strong>{{ capability.name?.en || capability.slug }}</strong>
+                            <strong>{{ capability.name?.es || capability.name?.en || capability.slug }}</strong>
                         </button>
                     </div>
                 </div>
                 <form v-if="capabilitySectionTab === 'form'" class="panel editor-form" @submit.prevent="saveCapability">
                     <div class="section-heading">
-                        <button class="ghost-button" type="button" @click="capabilitySectionTab = 'list'">← Back</button>
-                        <h2>{{ capabilityForm.id ? 'Edit capability' : 'New capability' }}</h2>
+                        <button class="ghost-button" type="button" @click="capabilitySectionTab = 'list'">← Volver</button>
+                        <h2>{{ capabilityForm.id ? 'Editar capacidad' : 'Nueva capacidad' }}</h2>
                     </div>
                     <div class="two-column">
                         <input v-model="capabilityForm.name.es" placeholder="Nombre ES">
                         <input v-model="capabilityForm.name.en" placeholder="Name EN">
                         <input v-model="capabilityForm.slug" placeholder="Slug">
-                        <input v-model.number="capabilityForm.sort_order" type="number" min="0" placeholder="Sort order">
+                        <input v-model.number="capabilityForm.sort_order" type="number" min="0" placeholder="Orden">
                     </div>
                     <div class="two-column">
-                        <textarea v-model="capabilityForm.description.es" rows="3" placeholder="Descripcion ES" />
+                        <textarea v-model="capabilityForm.description.es" rows="3" placeholder="Descripción ES" />
                         <textarea v-model="capabilityForm.description.en" rows="3" placeholder="Description EN" />
                     </div>
                     <div class="cta-row">
-                        <button class="primary-button" type="submit">Save capability</button>
-                        <button v-if="capabilityForm.id" class="danger-button" type="button" @click="deleteCapability(capabilityForm.id)">Delete</button>
+                        <button class="primary-button" type="submit">Guardar capacidad</button>
+                        <button v-if="capabilityForm.id" class="danger-button" type="button" @click="deleteCapability(capabilityForm.id)">Eliminar</button>
                     </div>
                 </form>
             </section>
@@ -763,84 +898,86 @@ onMounted(async () => {
             <section v-if="tab === 'courses'" class="admin-grid">
                 <div class="panel">
                     <div class="section-heading">
-                        <h2>Courses</h2>
-                        <button class="ghost-button" @click="resetCourseForm">New</button>
+                        <h2>Cursos</h2>
+                        <button class="ghost-button" @click="resetCourseForm">Nuevo</button>
                     </div>
                     <div class="admin-list">
                         <button v-for="course in courses" :key="course.id" class="admin-list-item" @click="fillCourse(course)">
-                            <strong>{{ course.name.en }}</strong>
-                            <span>{{ course.status }}</span>
+                            <div class="admin-list-content">
+                                <strong>{{ course.name.es || course.name.en }}</strong>
+                            </div>
+                            <span class="admin-list-status">{{ course.status }}</span>
                         </button>
                     </div>
                 </div>
                 <form class="panel editor-form" @submit.prevent="saveCourse">
-                    <h2>{{ courseForm.id ? 'Edit course' : 'New course' }}</h2>
+                    <h2>{{ courseForm.id ? 'Editar curso' : 'Nuevo curso' }}</h2>
                     <div class="two-column">
                         <input v-model="courseForm.name.es" placeholder="Nombre ES">
                         <input v-model="courseForm.name.en" placeholder="Name EN">
                         <input v-model="courseForm.slug" placeholder="Slug">
-                        <input v-model="courseForm.issuer" placeholder="Issuer">
+                        <input v-model="courseForm.issuer" placeholder="Emisor">
                         <input v-model="courseForm.issued_at" type="date">
-                        <input v-model="courseForm.credential_id" placeholder="Credential ID (optional)">
-                        <input v-model="courseForm.url" placeholder="Credential URL">
+                        <input v-model="courseForm.credential_id" placeholder="ID credencial (opcional)">
+                        <input v-model="courseForm.url" placeholder="URL credencial">
                     </div>
                     <div class="editor-toggles">
-                        <label><input v-model="courseForm.featured" type="checkbox"> Featured</label>
+                        <label><input v-model="courseForm.featured" type="checkbox"> Destacado</label>
                         <select v-model="courseForm.status">
-                            <option value="draft">Draft</option>
-                            <option value="published">Published</option>
+                            <option value="draft">Borrador</option>
+                            <option value="published">Publicado</option>
                         </select>
                     </div>
                     <div class="cta-row">
-                        <button class="primary-button" type="submit">Save course</button>
-                        <button v-if="courseForm.id" class="danger-button" type="button" @click="deleteCourse(courseForm.id)">Delete</button>
+                        <button class="primary-button" type="submit">Guardar curso</button>
+                        <button v-if="courseForm.id" class="danger-button" type="button" @click="deleteCourse(courseForm.id)">Eliminar</button>
                     </div>
                 </form>
             </section>
 
             <section v-if="tab === 'settings'" class="panel editor-form">
-                <h2>Site settings</h2>
+                <h2>Configuración del sitio</h2>
                 <div class="two-column">
-                    <input v-model="settings.home.brand" placeholder="Brand">
-                    <input v-model="settings.home.profileImage" placeholder="Profile image URL">
-                    <input v-model="settings.home.headline.es" placeholder="Headline ES">
+                    <input v-model="settings.home.brand" placeholder="Marca">
+                    <input v-model="settings.home.profileImage" placeholder="URL imagen de perfil">
+                    <input v-model="settings.home.headline.es" placeholder="Titular ES">
                     <input v-model="settings.home.headline.en" placeholder="Headline EN">
                     <textarea v-model="settings.home.bio.es" rows="4" placeholder="Bio ES" />
                     <textarea v-model="settings.home.bio.en" rows="4" placeholder="Bio EN" />
-                    <input v-model="settings.contact.title.es" placeholder="Contact title ES">
+                    <input v-model="settings.contact.title.es" placeholder="Título contacto ES">
                     <input v-model="settings.contact.title.en" placeholder="Contact title EN">
-                    <textarea v-model="settings.contact.subtitle.es" rows="3" placeholder="Contact subtitle ES" />
+                    <textarea v-model="settings.contact.subtitle.es" rows="3" placeholder="Subtítulo contacto ES" />
                     <textarea v-model="settings.contact.subtitle.en" rows="3" placeholder="Contact subtitle EN" />
-                    <input v-model="settings.contact.email" placeholder="Contact email">
+                    <input v-model="settings.contact.email" placeholder="Email de contacto">
                     <input v-model="settings.footer.copyright.es" placeholder="Footer ES">
                     <input v-model="settings.footer.copyright.en" placeholder="Footer EN">
                     <label class="checkbox-row">
                         <input v-model="settings.welcome_modal_enabled" type="checkbox">
-                        Welcome modal enabled
+                        Modal de bienvenida habilitado
                     </label>
-                    <input v-model="settings.welcome_modal_video_url" placeholder="Welcome video URL (YouTube embed)">
+                    <input v-model="settings.welcome_modal_video_url" placeholder="URL video de bienvenida (YouTube embed)">
                 </div>
                 <label>Stack JSON</label>
                 <textarea v-model="stackJson" rows="12" />
-                <label>Experience JSON</label>
+                <label>Experiencia JSON</label>
                 <textarea v-model="experienceJson" rows="12" />
-                <button class="primary-button" type="button" @click="saveSettings">Save settings</button>
+                <button class="primary-button" type="button" @click="saveSettings">Guardar configuración</button>
             </section>
 
             <section v-if="tab === 'social'" class="panel editor-form">
                 <div class="section-heading">
-                    <h2>Social links</h2>
-                    <button class="ghost-button" type="button" @click="addSocial">Add</button>
+                    <h2>Redes sociales</h2>
+                    <button class="ghost-button" type="button" @click="addSocial">Agregar</button>
                 </div>
                 <div v-for="(item, index) in socialLinks" :key="index" class="repeat-row">
-                    <input v-model="item.platform" placeholder="Platform">
-                    <input v-model="item.icon" placeholder="Icon">
-                    <input v-model="item.label.es" placeholder="Label ES">
+                    <input v-model="item.platform" placeholder="Plataforma">
+                    <input v-model="item.icon" placeholder="Icono">
+                    <input v-model="item.label.es" placeholder="Etiqueta ES">
                     <input v-model="item.label.en" placeholder="Label EN">
                     <input v-model="item.url" placeholder="URL">
-                    <label><input v-model="item.active" type="checkbox"> Active</label>
+                    <label><input v-model="item.active" type="checkbox"> Activo</label>
                 </div>
-                <button class="primary-button" type="button" @click="saveSocialLinks">Save social links</button>
+                <button class="primary-button" type="button" @click="saveSocialLinks">Guardar redes sociales</button>
             </section>
         </template>
 

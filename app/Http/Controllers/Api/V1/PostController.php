@@ -39,7 +39,7 @@ class PostController extends Controller
         $post = Post::query()
             ->where('status', 'published')
             ->where('slug', $slug)
-            ->with(['season', 'project'])
+            ->with(['season', 'relatedProject'])
             ->first();
 
         if (! $post) {

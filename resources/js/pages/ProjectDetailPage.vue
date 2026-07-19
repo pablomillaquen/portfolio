@@ -143,7 +143,7 @@ onMounted(() => {
         </nav>
 
         <section class="hero-banner panel detail-hero">
-            <img :src="project.coverImageUrl" :alt="project.title">
+            <img :src="project.coverImageUrl" :alt="project.title" width="320" height="180">
             <div>
                 <h1>{{ project.title }}</h1>
                 <p class="lead">{{ project.summary }}</p>
@@ -162,6 +162,21 @@ onMounted(() => {
                     <a v-if="project.repositoryUrl" class="secondary-button" :href="project.repositoryUrl" target="_blank" rel="noreferrer">Repo</a>
                 </div>
             </div>
+        </section>
+
+        <section class="panel">
+            <h2>{{ site.locale.value === 'es' ? 'Detalles' : 'Details' }}</h2>
+            <div class="detail-grid">
+                <article v-for="item in project.details" :key="`${item.label}-${item.value}`" class="detail-card">
+                    <p class="eyebrow">{{ item.label }}</p>
+                    <h3>{{ item.value }}</h3>
+                </article>
+            </div>
+        </section>
+
+        <section class="panel" v-if="project.description">
+            <h2>{{ site.locale.value === 'es' ? 'Descripción' : 'Description' }}</h2>
+            <div class="article-body" v-html="project.description"></div>
         </section>
 
         <section class="panel" v-if="project.problem">
@@ -185,21 +200,6 @@ onMounted(() => {
         </section>
 
         <section class="panel">
-            <h2>{{ site.locale.value === 'es' ? 'Detalles' : 'Details' }}</h2>
-            <div class="detail-grid">
-                <article v-for="item in project.details" :key="`${item.label}-${item.value}`" class="detail-card">
-                    <p class="eyebrow">{{ item.label }}</p>
-                    <h3>{{ item.value }}</h3>
-                </article>
-            </div>
-        </section>
-
-        <section class="panel" v-if="project.description">
-            <h2>{{ site.locale.value === 'es' ? 'Descripción' : 'Description' }}</h2>
-            <div class="article-body" v-html="project.description"></div>
-        </section>
-
-        <section class="panel">
             <h2>{{ site.locale.value === 'es' ? 'Galeria' : 'Gallery' }}</h2>
             <div class="media-grid">
                 <template v-for="item in project.media" :key="item.id">
@@ -214,7 +214,7 @@ onMounted(() => {
                         class="video-thumbnail"
                         @click="openVideo(item.url, $event)"
                     >
-                        <img loading="lazy" :src="getYouTubeThumbnail(item.url)" :alt="item.caption || project.title">
+                        <img loading="lazy" :src="getYouTubeThumbnail(item.url)" :alt="item.caption || project.title" width="320" height="180">
                         <span class="play-icon">▶</span>
                     </button>
                 </template>
@@ -245,20 +245,23 @@ onMounted(() => {
             </div>
         </Teleport>
 
-        <section class="panel" v-if="project.relatedPosts && project.relatedPosts.length > 0">
+        <section class="panel" v-if="project.relatedPostsBySeason && project.relatedPostsBySeason.length > 0">
             <h2>{{ site.locale.value === 'es' ? 'Publicaciones relacionadas' : 'Related posts' }}</h2>
-            <div class="list-grid">
-                <RouterLink
-                    v-for="post in project.relatedPosts"
-                    :key="post.id"
-                    :to="`/posts/${post.slug}`"
-                    class="list-card"
-                >
-                    <div>
-                        <h3>{{ post.title }}</h3>
-                        <p v-if="post.season">{{ post.season.name }} - {{ site.locale.value === 'es' ? 'Episodio' : 'Episode' }} {{ post.episodeNumber }}</p>
-                    </div>
-                </RouterLink>
+            <div v-for="group in project.relatedPostsBySeason" :key="group.season?.slug || 'none'" class="season-group">
+                <h3 v-if="group.season" class="season-group-title">{{ group.season.name }}</h3>
+                <div class="list-grid">
+                    <RouterLink
+                        v-for="post in group.posts"
+                        :key="post.id"
+                        :to="`/posts/${post.slug}`"
+                        class="list-card"
+                    >
+                        <div>
+                            <h4>{{ post.title }}</h4>
+                            <p>{{ site.locale.value === 'es' ? 'Episodio' : 'Episode' }} {{ post.episodeNumber }}</p>
+                        </div>
+                    </RouterLink>
+                </div>
             </div>
         </section>
     </div>

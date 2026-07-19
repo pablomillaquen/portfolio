@@ -12,7 +12,7 @@ class AdminProjectController extends Controller
     public function index()
     {
         return response()->json(
-            Project::query()->with(['media', 'categories', 'capabilities'])->orderByDesc('featured')->orderBy('sort_order')->get()
+            Project::query()->with(['media', 'categories', 'capabilities', 'posts'])->orderByDesc('featured')->orderBy('sort_order')->get()
         );
     }
 
@@ -24,8 +24,9 @@ class AdminProjectController extends Controller
         $this->syncMedia($project, $request->input('media', []));
         $project->categories()->sync($request->input('categories', []));
         $project->capabilities()->sync($request->input('capabilities', []));
+        $project->posts()->sync($request->input('posts', []));
 
-        return response()->json($project->load(['media', 'categories', 'capabilities']), 201);
+        return response()->json($project->load(['media', 'categories', 'capabilities', 'posts']), 201);
     }
 
     public function update(Request $request, Project $project)
@@ -36,8 +37,9 @@ class AdminProjectController extends Controller
         $this->syncMedia($project, $request->input('media', []));
         $project->categories()->sync($request->input('categories', []));
         $project->capabilities()->sync($request->input('capabilities', []));
+        $project->posts()->sync($request->input('posts', []));
 
-        return response()->json($project->load(['media', 'categories', 'capabilities']));
+        return response()->json($project->load(['media', 'categories', 'capabilities', 'posts']));
     }
 
     public function destroy(Project $project)
@@ -54,9 +56,9 @@ class AdminProjectController extends Controller
             'status' => ['required', 'in:draft,published'],
             'featured' => ['boolean'],
             'sort_order' => ['nullable', 'integer', 'min:0'],
-            'cover_image_url' => ['nullable', 'url'],
-            'demo_url' => ['nullable', 'url'],
-            'repository_url' => ['nullable', 'url'],
+            'cover_image_url' => ['nullable', 'string', 'max:2048'],
+            'demo_url' => ['nullable', 'string', 'max:2048'],
+            'repository_url' => ['nullable', 'string', 'max:2048'],
             'title' => ['required', 'array'],
             'title.es' => ['required', 'string'],
             'title.en' => ['required', 'string'],

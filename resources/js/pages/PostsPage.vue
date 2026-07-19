@@ -110,7 +110,7 @@ onMounted(loadData);
                 :rel="post.type === 'external' ? 'noreferrer' : undefined"
                 class="list-card"
             >
-                <img v-if="post.coverImageUrl" loading="lazy" :src="post.coverImageUrl" :alt="post.title" class="post-cover">
+                <img v-if="post.coverImageUrl" loading="lazy" :src="post.coverImageUrl" :alt="post.title" class="post-cover" width="320" height="180">
                 <div>
                     <h3>{{ post.title }}</h3>
                     <p>{{ post.excerpt }}</p>

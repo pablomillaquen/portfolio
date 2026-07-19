@@ -3,6 +3,9 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
+use App\Models\Category;
+use App\Models\Capability;
+use App\Models\Season;
 use App\Support\TranslatableContent;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -20,7 +23,6 @@ class AdminPreviewController extends Controller
 
         $type = $validated['type'];
         $locale = $validated['locale'];
-        // Use the raw data array directly from the request to bypass validated elements filtering
         $data = $request->input('data');
 
         if ($type === 'project') {
@@ -35,14 +37,23 @@ class AdminPreviewController extends Controller
         $title = TranslatableContent::text($data['title'] ?? [], $locale) ?? '';
         $summary = TranslatableContent::text($data['summary'] ?? [], $locale) ?? '';
         $description = Str::markdown(TranslatableContent::text($data['description'] ?? [], $locale) ?? '');
+        $problem = Str::markdown(TranslatableContent::text($data['problem'] ?? [], $locale) ?? '');
+        $approach = Str::markdown(TranslatableContent::text($data['approach'] ?? [], $locale) ?? '');
+        $contribution = Str::markdown(TranslatableContent::text($data['contribution'] ?? [], $locale) ?? '');
+        $whatItDemonstrates = Str::markdown(TranslatableContent::text($data['what_it_demonstrates'] ?? [], $locale) ?? '');
         $details = TranslatableContent::deep($data['details'] ?? [], $locale) ?? [];
         $media = $data['media'] ?? [];
         $stack = $data['stack'] ?? [];
         $coverImageUrl = $data['cover_image_url'] ?? null;
         $demoUrl = $data['demo_url'] ?? null;
         $repositoryUrl = $data['repository_url'] ?? null;
+        $categories = $data['categories'] ?? [];
+        $capabilities = $data['capabilities'] ?? [];
 
-        $html = $this->buildProjectHtml($title, $summary, $description, $details, $media, $stack, $coverImageUrl, $demoUrl, $repositoryUrl, $locale);
+        $categoryModels = Category::whereIn('id', $categories)->get();
+        $capabilityModels = Capability::whereIn('id', $capabilities)->get();
+
+        $html = $this->buildProjectHtml($title, $summary, $description, $problem, $approach, $contribution, $whatItDemonstrates, $details, $media, $stack, $coverImageUrl, $demoUrl, $repositoryUrl, $categoryModels, $capabilityModels, $locale);
 
         return [
             'html' => $html,
@@ -58,8 +69,16 @@ class AdminPreviewController extends Controller
         $content = Str::markdown(TranslatableContent::text($data['content'] ?? [], $locale) ?? '');
         $coverImageUrl = $data['cover_image_url'] ?? null;
         $externalUrl = $data['external_url'] ?? null;
+        $publishedAt = $data['published_at'] ?? null;
+        $seasonId = $data['season_id'] ?? null;
+        $episodeNumber = $data['episode_number'] ?? null;
 
-        $html = $this->buildPostHtml($title, $excerpt, $content, $coverImageUrl, $externalUrl, $locale);
+        $season = null;
+        if ($seasonId) {
+            $season = Season::find($seasonId);
+        }
+
+        $html = $this->buildPostHtml($title, $excerpt, $content, $coverImageUrl, $externalUrl, $publishedAt, $season, $episodeNumber, $locale);
 
         return [
             'html' => $html,
@@ -72,12 +91,18 @@ class AdminPreviewController extends Controller
         string $title,
         string $summary,
         string $description,
+        string $problem,
+        string $approach,
+        string $contribution,
+        string $whatItDemonstrates,
         array $details,
         array $media,
         array $stack,
         ?string $coverImageUrl,
         ?string $demoUrl,
         ?string $repositoryUrl,
+        $categories,
+        $capabilities,
         string $locale = 'en'
     ): string {
         $html = '<div class="detail-layout">';
@@ -99,7 +124,28 @@ class AdminPreviewController extends Controller
             }
             $html .= '</div>';
         }
+        if ($categories->isNotEmpty()) {
+            $html .= '<div class="meta-tags">';
+            foreach ($categories as $cat) {
+                $name = TranslatableContent::text($cat->name, $locale);
+                if ($name) {
+                    $html .= '<span class="tag-category">'.e($name).'</span>';
+                }
+            }
+            $html .= '</div>';
+        }
+        if ($capabilities->isNotEmpty()) {
+            $html .= '<div class="meta-tags">';
+            foreach ($capabilities as $cap) {
+                $name = TranslatableContent::text($cap->name, $locale);
+                if ($name) {
+                    $html .= '<span class="tag-capability">'.e($name).'</span>';
+                }
+            }
+            $html .= '</div>';
+        }
         if ($demoUrl || $repositoryUrl) {
+            $html .= '<hr>';
             $html .= '<div class="cta-row">';
             if ($demoUrl) {
                 $html .= '<a class="primary-button" href="'.e($demoUrl).'" target="_blank" rel="noreferrer">Demo</a>';
@@ -139,6 +185,24 @@ class AdminPreviewController extends Controller
             $html .= '</section>';
         }
 
+        // Case study sections
+        $caseStudySections = [
+            ['key' => 'problem', 'label_es' => 'Problema', 'label_en' => 'Problem', 'value' => $problem],
+            ['key' => 'approach', 'label_es' => 'Enfoque', 'label_en' => 'Approach', 'value' => $approach],
+            ['key' => 'contribution', 'label_es' => 'Aporte', 'label_en' => 'Contribution', 'value' => $contribution],
+            ['key' => 'what_it_demonstrates', 'label_es' => 'Qué demuestra este trabajo', 'label_en' => 'What This Work Demonstrates', 'value' => $whatItDemonstrates],
+        ];
+
+        foreach ($caseStudySections as $section) {
+            if ($section['value']) {
+                $label = $locale === 'es' ? $section['label_es'] : $section['label_en'];
+                $html .= '<section class="panel">';
+                $html .= '<h2>'.e($label).'</h2>';
+                $html .= '<div class="article-body">'.$section['value'].'</div>';
+                $html .= '</section>';
+            }
+        }
+
         // Gallery/Media section
         if (! empty($media)) {
             $galleryLabel = $locale === 'es' ? 'Galeria' : 'Gallery';
@@ -168,6 +232,9 @@ class AdminPreviewController extends Controller
         string $content,
         ?string $coverImageUrl,
         ?string $externalUrl,
+        ?string $publishedAt,
+        ?Season $season,
+        ?int $episodeNumber,
         string $locale = 'en'
     ): string {
         $html = '<div class="detail-layout">';
@@ -177,10 +244,18 @@ class AdminPreviewController extends Controller
             $html .= '<img class="article-cover" src="'.e($coverImageUrl).'" alt="'.e($title).'">';
         }
 
-        $publishedLabel = $locale === 'es' ? 'Vista previa' : 'Preview';
-        $html .= '<p class="eyebrow">'.e($publishedLabel).'</p>';
-        
+        if ($publishedAt) {
+            $date = \Carbon\Carbon::parse($publishedAt)->format('d M Y');
+            $html .= '<p class="eyebrow">'.e($date).'</p>';
+        }
+
         $html .= '<h1>'.e($title).'</h1>';
+
+        if ($season) {
+            $seasonName = TranslatableContent::text($season->name, $locale);
+            $episodeLabel = $locale === 'es' ? 'Episodio' : 'Episode';
+            $html .= '<p class="season-badge">'.e($seasonName).' - '.$episodeLabel.' '.e((string) $episodeNumber).'</p>';
+        }
 
         if ($excerpt) {
             $html .= '<p class="lead">'.e($excerpt).'</p>';
@@ -190,12 +265,10 @@ class AdminPreviewController extends Controller
             $html .= '<div class="article-body">'.$content.'</div>';
         }
 
-        if ($externalUrl) {
-            $readMoreLabel = $locale === 'es' ? 'Leer más' : 'Read more';
-            $html .= '<div class="cta-row">';
-            $html .= '<a class="secondary-button" href="'.e($externalUrl).'" target="_blank" rel="noreferrer">'.e($readMoreLabel).'</a>';
-            $html .= '</div>';
-        }
+        $html .= '<div class="cta-row">';
+        $shareLabel = $locale === 'es' ? 'Compartir en LinkedIn' : 'Share on LinkedIn';
+        $html .= '<a class="secondary-button" href="https://www.linkedin.com/sharing/share-offsite/?url='.urlencode('#').'" target="_blank" rel="noreferrer">'.e($shareLabel).'</a>';
+        $html .= '</div>';
 
         $html .= '</section>';
         $html .= '</div>';
