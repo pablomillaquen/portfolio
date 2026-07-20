@@ -761,6 +761,14 @@ h2 {
     max-width: 720px;
 }
 
+.article-card .article-cover {
+    margin-bottom: 1rem;
+}
+
+.article-card .season-badge {
+    margin: 0.75rem 0;
+}
+
 /* ─────────────────────────────────────────────────
    POST DETAIL SIDEBAR
 ───────────────────────────────────────────────── */
@@ -935,6 +943,11 @@ h2 {
 .article-body ol {
     margin: 0 0 1em;
     padding-left: 1.5em;
+    list-style-type: disc;
+}
+
+.article-body ol {
+    list-style-type: decimal;
 }
 
 .article-body li {
