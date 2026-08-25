@@ -13,6 +13,7 @@
     <meta property="og:url" content="{{ $seo['url'] ?? url('/') }}">
     <meta property="og:type" content="website">
     <meta property="og:site_name" content="Pablo Millaquen">
+    <meta name="google-site-verification" content="GIc-WIAMC952DMn8GEqBeZMz_KgsCNVxIATORIWhUFM" />
     <meta name="twitter:card" content="summary_large_image">
     <meta name="twitter:title" content="{{ $seo['title'] ?? 'Pablo Millaquen — Desarrollador & Investigador' }}">
     <meta name="twitter:description" content="{{ $seo['description'] ?? 'Portfolio profesional de Pablo Millaquen.' }}">
