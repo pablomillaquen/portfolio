@@ -2,6 +2,7 @@
 import { computed, inject, onMounted, reactive, ref } from 'vue';
 import { api } from '../services/api';
 import ContentPreviewModal from '../components/ContentPreviewModal.vue';
+import ImageUploader from '../components/ImageUploader.vue';
 
 const site = inject('site');
 const tab = ref('projects');
@@ -584,7 +585,7 @@ onMounted(async () => {
                         <input v-model="projectForm.title.es" placeholder="Título ES">
                         <input v-model="projectForm.title.en" placeholder="Title EN">
                         <input v-model="projectForm.slug" placeholder="Slug">
-                        <input v-model="projectForm.cover_image_url" placeholder="URL imagen de portada">
+                        <ImageUploader v-model="projectForm.cover_image_url" label="Imagen de portada" />
                         <input v-model="projectForm.demo_url" placeholder="URL demo">
                         <input v-model="projectForm.repository_url" placeholder="URL repositorio">
                         <input v-model="projectForm.published_at" type="datetime-local">
@@ -644,7 +645,12 @@ onMounted(async () => {
                                 <option value="image">Imagen</option>
                                 <option value="video">Video</option>
                             </select>
-                            <input v-model="item.url" placeholder="URL del medio">
+                            <ImageUploader
+                                v-if="item.kind === 'image'"
+                                v-model="item.url"
+                                :label="`Imagen ${index + 1}`"
+                            />
+                            <input v-else v-model="item.url" placeholder="URL del video (YouTube)">
                             <input v-model="item.caption.es" placeholder="Pie ES">
                             <input v-model="item.caption.en" placeholder="Caption EN">
                         </div>
@@ -725,7 +731,7 @@ onMounted(async () => {
                         <input v-model="postForm.title.es" placeholder="Título ES">
                         <input v-model="postForm.title.en" placeholder="Title EN">
                         <input v-model="postForm.slug" placeholder="Slug">
-                        <input v-model="postForm.cover_image_url" placeholder="URL imagen de portada">
+                        <ImageUploader v-model="postForm.cover_image_url" label="Imagen de portada" />
                         <input v-model="postForm.external_url" placeholder="URL externa">
                         <input v-model="postForm.published_at" type="datetime-local">
                     </div>

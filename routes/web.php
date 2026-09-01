@@ -4,6 +4,7 @@ use App\Http\Controllers\Api\AdminPreviewController;
 use App\Http\Controllers\Api\AdminCourseController;
 use App\Http\Controllers\Api\AdminPostController;
 use App\Http\Controllers\Api\AdminProjectController;
+use App\Http\Controllers\Api\AdminUploadController;
 use App\Http\Controllers\Api\AdminSiteSettingController;
 use App\Http\Controllers\Api\AdminSocialLinkController;
 use App\Http\Controllers\Api\AdminSeasonController;
@@ -42,6 +43,8 @@ Route::prefix('api')->group(function (): void {
 
     Route::middleware('admin.session')->prefix('admin')->group(function (): void {
         Route::post('/preview', [AdminPreviewController::class, 'preview']);
+
+        Route::post('/uploads', [AdminUploadController::class, 'store']);
 
         Route::get('/projects', [AdminProjectController::class, 'index']);
         Route::post('/projects', [AdminProjectController::class, 'store']);
